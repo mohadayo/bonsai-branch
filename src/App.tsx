@@ -207,24 +207,29 @@ export default function App(): React.ReactElement {
   }, [stageIndex, cleared]);
 
   useEffect(() => {
+    if (view !== 'play') return;
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement) return;
       if (e.target instanceof HTMLTextAreaElement) return;
       if (e.key === 'r' || e.key === 'R') {
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
         reset();
       } else if (e.key === 'z' || e.key === 'Z') {
+        if (e.altKey) return;
         e.preventDefault();
         undo();
       } else if (e.key === 'ArrowRight' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
         gotoStage(stageIndex + 1);
       } else if (e.key === 'ArrowLeft' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
         gotoStage(stageIndex - 1);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [history, state, stageIndex, maxUnlockedIndex]);
+  }, [view, history, state, stageIndex, maxUnlockedIndex]);
 
   function handleDragStart(event: DragStartEvent): void {
     const id = String(event.active.id);
@@ -259,13 +264,11 @@ export default function App(): React.ReactElement {
   }
 
   function undo(): void {
-    setHistory((h) => {
-      if (h.length === 0) return h;
-      const prev = h[h.length - 1]!;
-      setState(prev);
-      setRecentCommitId(null);
-      return h.slice(0, -1);
-    });
+    if (history.length === 0) return;
+    const prev = history[history.length - 1]!;
+    setState(prev);
+    setRecentCommitId(null);
+    setHistory((h) => h.slice(0, -1));
     setCommandLog((log) => log.slice(0, -1));
   }
 
@@ -486,6 +489,7 @@ export default function App(): React.ReactElement {
         collisionDetection={pointerWithin}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDragCancel={() => setActiveBranch(null)}
       >
         <main className="boards">
           <section className="board">

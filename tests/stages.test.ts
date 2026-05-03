@@ -71,12 +71,13 @@ function stateKey(state: BonsaiState): string {
   return parts.join('|');
 }
 
+const MAX_DEPTH = 5;
+
 function solve(stage: Stage): Move[] | null {
   const branches = Object.keys(stage.initial.branches);
   type Frame = { state: BonsaiState; path: Move[] };
   const queue: Frame[] = [{ state: stage.initial, path: [] }];
   const visited = new Set<string>();
-  const MAX_DEPTH = 5;
 
   while (queue.length > 0) {
     const frame = queue.shift()!;
@@ -109,7 +110,7 @@ describe('stages — 各ステージは正解パスで解ける', () => {
       const moves = solve(stage);
       expect(
         moves,
-        `${stage.id} は ${MAX_DEPTH_HINT} 手以内で解けない`,
+        `${stage.id} は ${MAX_DEPTH} 手以内で解けない`,
       ).not.toBeNull();
       // 操作数が常識的（10 手以内）
       expect(moves!.length).toBeGreaterThan(0);
@@ -161,4 +162,3 @@ describe('stages — initial と goal の整合性', () => {
   }
 });
 
-const MAX_DEPTH_HINT = 8;

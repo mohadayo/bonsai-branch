@@ -38,8 +38,12 @@ export function mergeBranches(
   if (source.head === target.head) {
     return { state, command: '', newCommitId: null, ok: false };
   }
-  // 注: ここでは fast-forward 検出をしない。
-  // 学習目的なので、すべての merge は明示的に merge commit を作る (git merge --no-ff 相当)。
+  // 既に source が target の祖先なら取り込み済み → 空マージを作らない
+  if (ancestorsOf(state, target.head).has(source.head)) {
+    return { state, command: '', newCommitId: null, ok: false };
+  }
+  // 注: fast-forward 検出はしない。
+  // 学習目的なので、未取り込みの merge は明示的に merge commit を作る (git merge --no-ff 相当)。
 
   const id = newCommitId();
   const newCommit: Commit = {
