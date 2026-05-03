@@ -27,6 +27,7 @@ interface LayoutResult {
   positions: Record<string, Pos>;
   potCenterX: number;
   potY: number;
+  offsetX: number;
 }
 
 function layout(
@@ -82,7 +83,7 @@ function layout(
   }
   const potCenterX = width / 2;
   const potY = height - 56;
-  return { width, height, positions, potCenterX, potY };
+  return { width, height, positions, potCenterX, potY, offsetX };
 }
 
 function Pot({ cx, cy }: { cx: number; cy: number }): ReactElement {
@@ -371,6 +372,7 @@ interface CommitVisualProps {
   isHead: boolean;
   isPulse: boolean;
   showMessage: boolean;
+  idScope: string;
 }
 
 function CommitVisual({
@@ -379,10 +381,11 @@ function CommitVisual({
   isHead,
   isPulse,
   showMessage,
+  idScope,
 }: CommitVisualProps): ReactElement {
   const isMerge = commit.parents.length > 1;
   const hash = hashOf(commit.id);
-  const gradId = `node-grad-${commit.id}`;
+  const gradId = `node-grad-${idScope}-${commit.id}`;
   return (
     <>
       <defs>
@@ -474,6 +477,7 @@ interface CommitDotProps {
   isHead: boolean;
   draggable: boolean;
   showMessage: boolean;
+  idScope: string;
 }
 
 function StaticCommitDot({
@@ -482,6 +486,7 @@ function StaticCommitDot({
   color,
   isHead,
   showMessage,
+  idScope,
 }: Omit<CommitDotProps, 'draggable'>): ReactElement {
   return (
     <g transform={`translate(${pos.x}, ${pos.y})`}>
@@ -491,6 +496,7 @@ function StaticCommitDot({
         isHead={isHead}
         isPulse={false}
         showMessage={showMessage}
+        idScope={idScope}
       />
     </g>
   );
@@ -502,6 +508,7 @@ function DraggableCommitDot({
   color,
   isHead,
   showMessage,
+  idScope,
 }: Omit<CommitDotProps, 'draggable'>): ReactElement {
   const { setNodeRef, listeners, attributes, transform, isDragging } =
     useDraggable({
@@ -526,6 +533,7 @@ function DraggableCommitDot({
         isHead={isHead}
         isPulse={isHead}
         showMessage={showMessage}
+        idScope={idScope}
       />
     </g>
   );
@@ -674,7 +682,9 @@ export function Bonsai({
     () => new Set(Object.values(state.branches).map((b) => b.head)),
     [state],
   );
-  const patternId = `asanoha-${interactive ? 'a' : 'g'}`;
+  const idScope = interactive ? 'a' : 'g';
+  const patternId = `asanoha-${idScope}`;
+  const paperId = `paper-light-${idScope}`;
 
   return (
     <svg
@@ -685,7 +695,7 @@ export function Bonsai({
       aria-label="盆栽"
     >
       <defs>
-        <radialGradient id="paper-light" cx="50%" cy="35%" r="80%">
+        <radialGradient id={paperId} cx="50%" cy="35%" r="80%">
           <stop offset="0%" stopColor="#f6efe1" />
           <stop offset="100%" stopColor="#e6dac0" />
         </radialGradient>
@@ -696,7 +706,7 @@ export function Bonsai({
         y={0}
         width={lay.width}
         height={lay.height}
-        fill="url(#paper-light)"
+        fill={`url(#${paperId})`}
         rx={6}
       />
       <rect
@@ -709,7 +719,7 @@ export function Bonsai({
       />
 
       {state.branchOrder.map((bid, i) => {
-        const x = PAD_X + i * COL_W;
+        const x = PAD_X + i * COL_W + lay.offsetX;
         return (
           <line
             key={`guide-${bid}`}
@@ -793,6 +803,7 @@ export function Bonsai({
                 isHead={isHead}
                 draggable={interactive && isHead}
                 showMessage={interactive}
+                idScope={idScope}
               />
             </motion.g>
           );
@@ -834,33 +845,36 @@ export function Bonsai({
           );
         })}
 
-      {state.branchOrder.map((bid, i) => (
-        <g key={`label-${bid}`}>
-          <rect
-            x={PAD_X + i * COL_W - 36}
-            y={lay.height - 26}
-            width={72}
-            height={18}
-            rx={9}
-            fill="#3a2417"
-            opacity={0.85}
-          />
-          <text
-            x={PAD_X + i * COL_W}
-            y={lay.height - 13}
-            textAnchor="middle"
-            fontSize={11}
-            fill={state.branches[bid]?.color ?? '#fff'}
-            fontFamily="'JetBrains Mono', ui-monospace, monospace"
-            fontWeight={500}
-          >
-            {state.branches[bid]?.name}
-          </text>
-        </g>
-      ))}
+      {state.branchOrder.map((bid, i) => {
+        const cx = PAD_X + i * COL_W + lay.offsetX;
+        return (
+          <g key={`label-${bid}`}>
+            <rect
+              x={cx - 36}
+              y={lay.height - 26}
+              width={72}
+              height={18}
+              rx={9}
+              fill="#3a2417"
+              opacity={0.85}
+            />
+            <text
+              x={cx}
+              y={lay.height - 13}
+              textAnchor="middle"
+              fontSize={11}
+              fill={state.branches[bid]?.color ?? '#fff'}
+              fontFamily="'JetBrains Mono', ui-monospace, monospace"
+              fontWeight={500}
+            >
+              {state.branches[bid]?.name}
+            </text>
+          </g>
+        );
+      })}
 
       {recentMergeId && lay.positions[recentMergeId] && (
-        <BlossomBurst at={lay.positions[recentMergeId]!} />
+        <BlossomBurst key={recentMergeId} at={lay.positions[recentMergeId]!} />
       )}
 
       {/* クリア時：最も進んだ commit 一つだけに花 */}
