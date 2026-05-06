@@ -2,6 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DndContext,
   pointerWithin,
+  PointerSensor,
+  useSensor,
+  useSensors,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
@@ -121,6 +124,23 @@ export default function App(): React.ReactElement {
   const [yourAspect, setYourAspect] = useState<number | null>(null);
   const [goalAspect, setGoalAspect] = useState<number | null>(null);
   const [activeBranch, setActiveBranch] = useState<string | null>(null);
+  const [hintOpen, setHintOpen] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia('(max-width: 720px)').matches
+      : false,
+  );
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 720px)');
+    const handler = (): void => setIsMobile(mq.matches);
+    handler();
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
   const isCleared = useMemo(
     () => matchesTarget(state, stage.goal),
     [state, stage.goal],
@@ -154,7 +174,29 @@ export default function App(): React.ReactElement {
     setCommandLog([]);
     setGoalRevealed(false);
     setMode('merge');
+    setHintOpen(false);
   }, [stage]);
+
+  // モバイルでタップ操作するため、外側クリック / Escape で閉じる
+  useEffect(() => {
+    if (!hintOpen) return;
+    function onClick(e: MouseEvent): void {
+      const wrap = document.getElementById('hint-wrap');
+      if (wrap && !wrap.contains(e.target as Node)) setHintOpen(false);
+    }
+    function onKey(e: KeyboardEvent): void {
+      if (e.key === 'Escape') setHintOpen(false);
+    }
+    const t = window.setTimeout(() => {
+      document.addEventListener('click', onClick);
+    }, 0);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      window.clearTimeout(t);
+      document.removeEventListener('click', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [hintOpen]);
 
   // クリアしたら自動で答え合わせ
   useEffect(() => {
@@ -463,12 +505,13 @@ export default function App(): React.ReactElement {
               </div>
             ))}
           </div>
-          <div className="hint-wrap">
+          <div className="hint-wrap" id="hint-wrap">
             <button
               type="button"
               className="hint-link"
               aria-describedby="hint-tooltip"
-              tabIndex={0}
+              aria-expanded={hintOpen}
+              onClick={() => setHintOpen((v) => !v)}
             >
               <span className="hint-icon">?</span>
               ヒント
@@ -486,6 +529,7 @@ export default function App(): React.ReactElement {
       </section>
 
       <DndContext
+        sensors={sensors}
         collisionDetection={pointerWithin}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
@@ -505,6 +549,7 @@ export default function App(): React.ReactElement {
                   invalidDropBranchIds={invalidDropBranchIds}
                   containerAspect={yourAspect}
                   bloomAll={isCleared}
+                  isMobile={isMobile}
                 />
               </div>
             </div>
@@ -537,6 +582,7 @@ export default function App(): React.ReactElement {
                     <Bonsai
                       state={stage.goal}
                       containerAspect={goalAspect}
+                      isMobile={isMobile}
                     />
                   </motion.div>
                 ) : (
