@@ -646,10 +646,12 @@ button {
   pointer-events: none;
 }
 .hint-wrap:hover .hint-tooltip,
-.hint-wrap:focus-within .hint-tooltip {
+.hint-wrap:focus-within .hint-tooltip,
+.hint-link[aria-expanded='true'] ~ .hint-tooltip {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
+  pointer-events: auto;
 }
 .hint-tooltip strong {
   display: block;
@@ -869,24 +871,146 @@ button {
 /* ---------- responsive ---------- */
 @media (max-width: 720px) {
   .app {
-    padding: 28px 16px 40px;
-    gap: 20px;
+    padding: 22px 16px 36px;
+    gap: 18px;
   }
   .boards {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
+
+  /* header: row のまま、title 内を縦積み */
   .header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+    align-items: center;
+    gap: 12px;
   }
   .title {
-    font-size: 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    flex: 1 1 auto;
+    min-width: 0;
   }
-  .t {
+  .logo {
+    padding: 20px 4px 8px 16px;
+  }
+  .logo-text {
+    font-size: 21px;
+    letter-spacing: 0.06em;
+  }
+  .logo-art {
+    height: 20px;
+  }
+  .title-en {
+    font-size: 10px;
+  }
+  .overall-value {
     font-size: 16px;
   }
+
+  /* prompt — フォント縮小に合わせて min-height も再計算 */
+  .t {
+    font-size: 18px;
+    min-height: calc(18px * 1.35 * 2);
+  }
   .d {
-    font-size: 15px;
+    font-size: 14.5px;
+    line-height: 1.7;
+    min-height: calc(14.5px * 1.7 * 2);
+  }
+
+  /* mode 群: グループラベルを上に、ボタンを行で並べる */
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .modes {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+  }
+  .mode {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+  .mode-group-label {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--ink-2);
+  }
+  .mode-btn {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 9px 10px;
+    font-size: 12px;
+    justify-content: center;
+    min-width: 0;
+    white-space: nowrap;
+  }
+  .mode-btn.on {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+
+  /* hint: 右上配置を維持しつつ画面外に出ないようクランプ */
+  .hint-wrap {
+    align-self: flex-end;
+  }
+  .hint-tooltip {
+    max-width: min(320px, calc(100vw - 32px));
+  }
+
+  /* boards: 縦並びでも縦に伸びすぎないように高さを抑える */
+  .bb {
+    min-height: 380px;
+    padding: 12px;
+  }
+
+  /* solved cmd: 長いコマンドを折り返す。空白や記号区切りを優先して文字途中の改行を抑える */
+  .solved-cmd .cmd-text {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  /* 答えボードの大きい ✓ がモバイルだと大きすぎる */
+  .check {
+    font-size: 100px;
+  }
+
+  /* footer */
+  .foot {
+    flex-wrap: wrap;
+  }
+
+  /* rail */
+  .rail {
+    gap: 10px;
+  }
+  .dots {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 380px) {
+  .dots {
+    gap: 4px;
+  }
+  .mode-btn {
+    font-size: 11.5px;
+    padding: 8px 6px;
+  }
+  .bb {
+    min-height: 340px;
+    padding: 10px;
   }
 }

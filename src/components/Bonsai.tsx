@@ -28,12 +28,18 @@ interface LayoutResult {
   potCenterX: number;
   potY: number;
   offsetX: number;
+  padX: number;
 }
 
 function layout(
   state: BonsaiState,
   containerAspect: number | null,
+  isMobile: boolean,
 ): LayoutResult {
+  // モバイルでは左右パディングを詰めて、 縦長コンテナでも上下に余白が出すぎないようにする
+  const padX = isMobile ? 36 : PAD_X;
+  const padXRight = isMobile ? 90 : PAD_X_RIGHT;
+
   const generations = computeGenerations(state);
   const branchIndex: Record<string, number> = {};
   state.branchOrder.forEach((id, i) => {
@@ -53,12 +59,12 @@ function layout(
     const g = generations[c.id] ?? 0;
     const bi = branchIndex[c.branch] ?? 0;
     positions[c.id] = {
-      x: PAD_X + bi * COL_W,
+      x: padX + bi * COL_W,
       y: PAD_TOP + (maxGen - g) * rowH,
     };
   }
   const branchCount = Math.max(1, state.branchOrder.length);
-  const naturalW = PAD_X + PAD_X_RIGHT + (branchCount - 1) * COL_W;
+  const naturalW = padX + padXRight + (branchCount - 1) * COL_W;
   const naturalH = PAD_TOP + maxGen * rowH + PAD_BOTTOM;
 
   // コンテナのアスペクトに viewBox を合わせて、中身を中央寄せで配置
@@ -75,7 +81,12 @@ function layout(
       height = naturalW / aspect;
     }
   }
-  const offsetX = (width - naturalW) / 2;
+  // モバイルでは padX / padXRight の非対称さで中身が左寄せに見えるため、
+  // ブランチ列の中心を viewBox 横中央に揃えるよう offsetX を補正する。
+  const contentSpan = (branchCount - 1) * COL_W;
+  const offsetX = isMobile
+    ? (width - contentSpan) / 2 - padX
+    : (width - naturalW) / 2;
   const offsetY = (height - naturalH) / 2;
   for (const id of Object.keys(positions)) {
     const p = positions[id]!;
@@ -83,7 +94,7 @@ function layout(
   }
   const potCenterX = width / 2;
   const potY = height - 56;
-  return { width, height, positions, potCenterX, potY, offsetX };
+  return { width, height, positions, potCenterX, potY, offsetX, padX };
 }
 
 function Pot({ cx, cy }: { cx: number; cy: number }): ReactElement {
@@ -523,6 +534,7 @@ function DraggableCommitDot({
       transform={`translate(${pos.x + dx}, ${pos.y + dy})`}
       style={{
         cursor: isDragging ? 'grabbing' : 'grab',
+        touchAction: 'none',
       }}
       {...listeners}
       {...attributes}
@@ -665,6 +677,7 @@ export function Bonsai({
   invalidDropBranchIds,
   containerAspect = null,
   bloomAll = false,
+  isMobile = false,
 }: {
   state: BonsaiState;
   interactive?: boolean;
@@ -672,10 +685,11 @@ export function Bonsai({
   invalidDropBranchIds?: ReadonlySet<string>;
   containerAspect?: number | null;
   bloomAll?: boolean;
+  isMobile?: boolean;
 }): ReactElement {
   const lay = useMemo(
-    () => layout(state, containerAspect),
-    [state, containerAspect],
+    () => layout(state, containerAspect, isMobile),
+    [state, containerAspect, isMobile],
   );
   const generations = useMemo(() => computeGenerations(state), [state]);
   const heads = useMemo(
@@ -719,7 +733,7 @@ export function Bonsai({
       />
 
       {state.branchOrder.map((bid, i) => {
-        const x = PAD_X + i * COL_W + lay.offsetX;
+        const x = lay.padX + i * COL_W + lay.offsetX;
         return (
           <line
             key={`guide-${bid}`}
@@ -846,7 +860,7 @@ export function Bonsai({
         })}
 
       {state.branchOrder.map((bid, i) => {
-        const cx = PAD_X + i * COL_W + lay.offsetX;
+        const cx = lay.padX + i * COL_W + lay.offsetX;
         return (
           <g key={`label-${bid}`}>
             <rect
