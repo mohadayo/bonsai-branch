@@ -36,9 +36,11 @@ function layout(
   containerAspect: number | null,
   isMobile: boolean,
 ): LayoutResult {
-  // モバイルでは左右パディングを詰めて、 縦長コンテナでも上下に余白が出すぎないようにする
+  // モバイルでは左右パディングを詰めて、 縦長コンテナでも上下に余白が出すぎないようにする。
+  // padXRight はコミットメッセージ (例: "ログインフォーム追加" = 約 120px) が右端で
+  // 見切れない長さを確保する。 NODE_R(13) + 10 + 文字幅 = 約 145px なので 150 を採用。
   const padX = isMobile ? 36 : PAD_X;
-  const padXRight = isMobile ? 90 : PAD_X_RIGHT;
+  const padXRight = isMobile ? 150 : PAD_X_RIGHT;
 
   const generations = computeGenerations(state);
   const branchIndex: Record<string, number> = {};
@@ -81,12 +83,10 @@ function layout(
       height = naturalW / aspect;
     }
   }
-  // モバイルでは padX / padXRight の非対称さで中身が左寄せに見えるため、
-  // ブランチ列の中心を viewBox 横中央に揃えるよう offsetX を補正する。
-  const contentSpan = (branchCount - 1) * COL_W;
-  const offsetX = isMobile
-    ? (width - contentSpan) / 2 - padX
-    : (width - naturalW) / 2;
+  // 中身 (commit dot 列 + 右側のコミットメッセージ枠) を含めて中央寄せする。
+  // モバイルで commit dot 列だけを viewBox 中央に置くと、 メッセージ表示用の右余白が
+  // viewBox 外にはみ出して文字が切れるため、 desktop と同じく naturalW 全体で中央寄せ。
+  const offsetX = (width - naturalW) / 2;
   const offsetY = (height - naturalH) / 2;
   for (const id of Object.keys(positions)) {
     const p = positions[id]!;
