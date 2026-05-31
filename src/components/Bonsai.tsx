@@ -678,6 +678,7 @@ export function Bonsai({
   containerAspect = null,
   bloomAll = false,
   isMobile = false,
+  solved = false,
 }: {
   state: BonsaiState;
   interactive?: boolean;
@@ -686,6 +687,7 @@ export function Bonsai({
   containerAspect?: number | null;
   bloomAll?: boolean;
   isMobile?: boolean;
+  solved?: boolean;
 }): ReactElement {
   const lay = useMemo(
     () => layout(state, containerAspect, isMobile),
@@ -815,7 +817,7 @@ export function Bonsai({
                 pos={pos}
                 color={color}
                 isHead={isHead}
-                draggable={interactive && isHead}
+                draggable={interactive && isHead && !solved}
                 showMessage={interactive}
                 idScope={idScope}
               />
@@ -854,7 +856,7 @@ export function Bonsai({
               pos={pos}
               color={branch.color}
               invalid={invalidDropBranchIds?.has(bid) ?? false}
-              enabled={true}
+              enabled={!solved}
             />
           );
         })}

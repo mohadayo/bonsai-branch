@@ -162,3 +162,114 @@ describe('stages — initial と goal の整合性', () => {
   }
 });
 
+function stageById(id: string): Stage {
+  const st = stages.find((s) => s.id === id);
+  if (!st) throw new Error(`stage ${id} not found`);
+  return st;
+}
+
+function applyAll(initial: BonsaiState, moves: Move[]): BonsaiState | null {
+  let state: BonsaiState | null = initial;
+  for (const m of moves) {
+    if (!state) return null;
+    state = applyMove(state, m);
+  }
+  return state;
+}
+
+// 取り込み順を問わないステージは、どの順で操作しても必ずクリアになること（false negative を作らない）。
+// solver の stateKey は形状のみで重複排除するため逆順を枝刈りしてしまい、この性質を検出できない。
+// よって両順序を明示的に適用して確かめる。
+describe('matchesTarget — 取り込み順は別解として許容する', () => {
+  it('s-02: 2 本の PR をどちらから merge してもクリア', () => {
+    const st = stageById('s-02');
+    const a = applyAll(st.initial, [
+      { op: 'merge', source: 'feat/cart', target: 'develop' },
+      { op: 'merge', source: 'fix/header', target: 'develop' },
+    ]);
+    const b = applyAll(st.initial, [
+      { op: 'merge', source: 'fix/header', target: 'develop' },
+      { op: 'merge', source: 'feat/cart', target: 'develop' },
+    ]);
+    expect(matchesTarget(a!, st.goal)).toBe(true);
+    expect(matchesTarget(b!, st.goal)).toBe(true);
+  });
+
+  it('s-06: hotfix の 2 つの merge は順不同でクリア', () => {
+    const st = stageById('s-06');
+    const a = applyAll(st.initial, [
+      { op: 'merge', source: 'hotfix', target: 'main' },
+      { op: 'merge', source: 'hotfix', target: 'develop' },
+    ]);
+    const b = applyAll(st.initial, [
+      { op: 'merge', source: 'hotfix', target: 'develop' },
+      { op: 'merge', source: 'hotfix', target: 'main' },
+    ]);
+    expect(matchesTarget(a!, st.goal)).toBe(true);
+    expect(matchesTarget(b!, st.goal)).toBe(true);
+  });
+
+  it('s-09: 3 本の PR を任意の順で merge してもクリア', () => {
+    const st = stageById('s-09');
+    for (const order of [
+      ['feat/a', 'feat/b', 'feat/c'],
+      ['feat/c', 'feat/b', 'feat/a'],
+      ['feat/b', 'feat/a', 'feat/c'],
+    ]) {
+      const state = applyAll(
+        st.initial,
+        order.map((source) => ({ op: 'merge' as Op, source, target: 'develop' })),
+      );
+      expect(matchesTarget(state!, st.goal)).toBe(true);
+    }
+  });
+});
+
+// 教える操作と概念的に異なる操作では、形が似ていてもクリアにならないこと（over-acceptance の解消）。
+describe('matchesTarget — 意図と異なる操作では誤クリアしない', () => {
+  const wrong: { stage: string; move: Move; why: string }[] = [
+    { stage: 's-12', move: { op: 'squash', source: 'main', target: 'develop' }, why: 'cherry-pick 課題を squash で代用' },
+    { stage: 's-13', move: { op: 'revert', source: 'develop', target: 'feature' }, why: 'cherry-pick 課題を revert で代用' },
+    { stage: 's-17', move: { op: 'squash', source: 'feature', target: 'main' }, why: 'revert 課題を squash で代用' },
+    { stage: 's-19', move: { op: 'cherry-pick', source: 'feature', target: 'develop' }, why: 'squash 課題を cherry-pick で代用' },
+  ];
+  for (const { stage, move, why } of wrong) {
+    it(`${stage}: ${why} → 操作は成立するがクリアしない`, () => {
+      const st = stageById(stage);
+      const next = applyMove(st.initial, move);
+      expect(next, '操作自体は成立する').not.toBeNull();
+      expect(matchesTarget(next!, st.goal), 'ゴールには一致しない').toBe(false);
+    });
+  }
+
+  it('s-14: hotfix 以外を main / develop に運んでもクリアしない', () => {
+    const st = stageById('s-14');
+    const wrongPick = applyMove(st.initial, { op: 'cherry-pick', source: 'develop', target: 'main' });
+    expect(wrongPick).not.toBeNull();
+    expect(matchesTarget(wrongPick!, st.goal)).toBe(false);
+    const wrongSquash = applyMove(st.initial, { op: 'squash', source: 'hotfix', target: 'main' });
+    expect(wrongSquash).not.toBeNull();
+    expect(matchesTarget(wrongSquash!, st.goal)).toBe(false);
+  });
+});
+
+// 各操作タイプの正解手順では確実にクリアすること（厳格化で false negative を生んでいない）。
+describe('matchesTarget — 正解手順ではクリアする', () => {
+  const intended: { stage: string; moves: Move[] }[] = [
+    { stage: 's-01', moves: [{ op: 'merge', source: 'feature', target: 'develop' }] },
+    { stage: 's-04', moves: [{ op: 'rebase', source: 'feature', target: 'develop' }] },
+    { stage: 's-12', moves: [{ op: 'cherry-pick', source: 'main', target: 'develop' }] },
+    { stage: 's-15', moves: [{ op: 'reset', source: 'develop', target: 'main' }] },
+    { stage: 's-17', moves: [{ op: 'revert', source: 'feature', target: 'main' }] },
+    { stage: 's-19', moves: [{ op: 'squash', source: 'feature', target: 'develop' }] },
+  ];
+  for (const { stage, moves } of intended) {
+    it(`${stage}: 正解手順でクリア`, () => {
+      const st = stageById(stage);
+      const state = applyAll(st.initial, moves);
+      expect(state).not.toBeNull();
+      expect(matchesTarget(state!, st.goal)).toBe(true);
+    });
+  }
+});
+
