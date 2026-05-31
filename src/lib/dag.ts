@@ -50,7 +50,7 @@ export function mergeBranches(
     id,
     parents: [target.head, source.head],
     branch: targetBranchId,
-    message: `Merge ${source.name}`,
+    message: `${source.name} をマージ`,
   };
 
   const newState: BonsaiState = {
@@ -385,18 +385,6 @@ function chainBefore(
   return out;
 }
 
-function commitsAt(state: BonsaiState, headId: string): Commit[] {
-  const out: Commit[] = [];
-  let cur: string | undefined = headId;
-  while (cur !== undefined) {
-    const c: Commit | undefined = state.commits[cur];
-    if (!c) break;
-    out.push(c);
-    cur = c.parents[0];
-  }
-  return out;
-}
-
 export function matchesTarget(
   current: BonsaiState,
   target: BonsaiState,
@@ -404,17 +392,71 @@ export function matchesTarget(
   const branchIds = Object.keys(target.branches);
   if (Object.keys(current.branches).length !== branchIds.length) return false;
   for (const id of branchIds) {
-    const t = target.branches[id];
-    const c = current.branches[id];
-    if (!t || !c) return false;
-    const tChain = commitsAt(target, t.head);
-    const cChain = commitsAt(current, c.head);
-    if (tChain.length !== cChain.length) return false;
-    for (let i = 0; i < tChain.length; i++) {
-      const tc = tChain[i]!;
-      const cc = cChain[i]!;
-      if (tc.parents.length !== cc.parents.length) return false;
-      if (tc.branch !== cc.branch) return false;
+    if (!current.branches[id]) return false;
+  }
+
+  // 各ブランチ先端から到達できる全コミットを (branch, message, 親数) の多重集合にして比較する。
+  // first-parent の鎖だけを見ると、merge や cherry-pick で「取り込んだ相手」を取り違えても
+  // 形だけ一致してクリア扱いになってしまう (over-acceptance)。全祖先を辿り message まで含めることで、
+  // cherry-pick / squash / revert の区別も、merge の相手違いも検出できる。
+  const signatures = (
+    state: BonsaiState,
+    heads: ReadonlyArray<string>,
+  ): Map<string, number> => {
+    const reachable = new Set<string>();
+    for (const h of heads) {
+      for (const id of ancestorsOf(state, h)) reachable.add(id);
+    }
+    const counts = new Map<string, number>();
+    for (const id of reachable) {
+      const c = state.commits[id];
+      if (!c) continue;
+      const key = `${c.branch} ${c.message ?? ''} ${c.parents.length}`;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return counts;
+  };
+
+  const tSig = signatures(
+    target,
+    branchIds.map((id) => target.branches[id]!.head),
+  );
+  const cSig = signatures(
+    current,
+    branchIds.map((id) => current.branches[id]!.head),
+  );
+  if (tSig.size !== cSig.size) return false;
+  for (const [key, n] of tSig) {
+    if (cSig.get(key) !== n) return false;
+  }
+
+  // 各ブランチ先端の検査。先端の message は照合しない: 独立した取り込みの順序違い
+  // (例: 2 本の PR をどちらから先に merge してもよい) を正当な別解として許容するため。
+  // ただし first-parent の鎖の長さは見る: rebase は (branch, message, 親数) の多重集合を
+  // 変えずトポロジーだけ変えるので、鎖の長さ (= ブランチの根がどこに繋がるか) を比べないと
+  // initial と goal すら区別できない。鎖の長さは merge の取り込み順では不変なので、
+  // 順序非依存を壊さずに rebase を区別できる。
+  const firstParentDepth = (state: BonsaiState, head: string): number => {
+    let n = 0;
+    let cur: string | undefined = head;
+    while (cur !== undefined) {
+      const c: Commit | undefined = state.commits[cur];
+      if (!c) break;
+      n++;
+      cur = c.parents[0];
+    }
+    return n;
+  };
+  for (const id of branchIds) {
+    const tHead = target.branches[id]!.head;
+    const cHead = current.branches[id]!.head;
+    const th = target.commits[tHead];
+    const ch = current.commits[cHead];
+    if (!th || !ch) return false;
+    if (th.branch !== ch.branch) return false;
+    if (th.parents.length !== ch.parents.length) return false;
+    if (firstParentDepth(target, tHead) !== firstParentDepth(current, cHead)) {
+      return false;
     }
   }
   return true;

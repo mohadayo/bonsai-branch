@@ -550,6 +550,7 @@ export default function App(): React.ReactElement {
                   containerAspect={yourAspect}
                   bloomAll={isCleared}
                   isMobile={isMobile}
+                  solved={isCleared}
                 />
               </div>
             </div>
