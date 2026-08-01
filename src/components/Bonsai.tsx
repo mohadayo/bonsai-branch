@@ -679,6 +679,7 @@ export function Bonsai({
   bloomAll = false,
   isMobile = false,
   solved = false,
+  bare = false,
 }: {
   state: BonsaiState;
   interactive?: boolean;
@@ -688,6 +689,8 @@ export function Bonsai({
   bloomAll?: boolean;
   isMobile?: boolean;
   solved?: boolean;
+  /** 和紙の下地を描かない。呼び出し側が自前の背景を持つ場合に使う（ホームの飾り） */
+  bare?: boolean;
 }): ReactElement {
   const lay = useMemo(
     () => layout(state, containerAspect, isMobile),
@@ -717,22 +720,26 @@ export function Bonsai({
         </radialGradient>
         <AsanohaPattern id={patternId} />
       </defs>
-      <rect
-        x={0}
-        y={0}
-        width={lay.width}
-        height={lay.height}
-        fill={`url(#${paperId})`}
-        rx={6}
-      />
-      <rect
-        x={0}
-        y={0}
-        width={lay.width}
-        height={lay.height}
-        fill={`url(#${patternId})`}
-        rx={6}
-      />
+      {!bare && (
+        <>
+          <rect
+            x={0}
+            y={0}
+            width={lay.width}
+            height={lay.height}
+            fill={`url(#${paperId})`}
+            rx={6}
+          />
+          <rect
+            x={0}
+            y={0}
+            width={lay.width}
+            height={lay.height}
+            fill={`url(#${patternId})`}
+            rx={6}
+          />
+        </>
+      )}
 
       {state.branchOrder.map((bid, i) => {
         const x = lay.padX + i * COL_W + lay.offsetX;
