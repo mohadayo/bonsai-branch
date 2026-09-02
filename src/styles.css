@@ -344,6 +344,7 @@ button {
   gap: 8px;
 }
 .dot {
+  position: relative;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -351,6 +352,14 @@ button {
   border: none;
   padding: 0;
   transition: all 0.15s;
+}
+/* 見た目は 8px のまま、タップ領域だけ広げる（スマホで狙えるように）。
+   横は隣のドットと判定が重ならないよう gap の半分までに抑え、
+   縦だけ 24px まで伸ばす。列の間に押せない隙間はなくなる */
+.dot::after {
+  content: '';
+  position: absolute;
+  inset: -8px -3px;
 }
 .dot:hover {
   background: var(--ink-3);
@@ -1129,6 +1138,9 @@ button {
   .dots {
     gap: 4px;
   }
+  .dot::after {
+    inset: -8px -2px;
+  }
   .mode-btn {
     font-size: 11.5px;
     padding: 8px 6px;
@@ -1136,5 +1148,17 @@ button {
   .bb {
     min-height: 340px;
     padding: 10px;
+  }
+}
+
+/* OS の「視差効果を減らす」設定では CSS 側の動きも止める。
+   framer-motion 側は App の MotionConfig reducedMotion="user" が受け持つ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
