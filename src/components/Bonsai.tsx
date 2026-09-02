@@ -13,7 +13,9 @@ const ROW_H_MIN = 48;
 const MAX_TRUNK_HEIGHT = 220;
 const PAD_X = 80;
 const PAD_X_RIGHT = 180;
-const PAD_TOP = 46;
+// HEAD 旗は節の 40 上に立ち、その上に枝名が乗る (font-size 8)。
+// 最上段の節の上にこれが収まるだけの余白が要る
+const PAD_TOP = 58;
 const PAD_BOTTOM = 64;
 const NODE_R = 13;
 // Pot の影の楕円がいちばん外側。鉢を viewBox 内に収める判定に使う

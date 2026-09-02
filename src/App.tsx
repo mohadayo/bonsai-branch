@@ -65,9 +65,13 @@ const MODE_GROUPS: ReadonlyArray<{
 ];
 
 // ホームの飾り盆栽の縦横比。styles.css の .home-tree の aspect-ratio と必ず揃える。
-// isMobile と同じ 720px を境に、縦長 → 横長へ切り替える。
-const HERO_ASPECT_DESKTOP = 0.94;
-const HERO_ASPECT_MOBILE = 1.05;
+// さらに heroState の自然な縦横比 (枝の本数と段数から決まる) とも合わせること。
+// ずれると svg が viewBox を伸ばして中身を中央に置くので、木の上下に余白が出る。
+// 現在の heroState は 3 枝 / 3 段なので
+//   desktop: (80 + 80 + 2*140) / (58 + 3*70 + 64) = 440 / 332 = 1.325
+//   mobile : (36 + 36 + 2*140) / 332              = 352 / 332 = 1.06
+const HERO_ASPECT_DESKTOP = 1.325;
+const HERO_ASPECT_MOBILE = 1.06;
 
 // ホームで「この 20 問で何を触るか」を一望させるための操作名。
 const HOME_OPS: ReadonlyArray<string> = [
