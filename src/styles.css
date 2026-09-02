@@ -780,25 +780,21 @@ button {
   color: var(--ink);
   line-height: 1.65;
 }
-/* 一段目 (考え方) から、求めた人にだけ二段目 (操作) を見せる */
-.hint-more {
-  margin-top: 8px;
-  font-family: var(--display);
-  font-size: 12px;
-  color: var(--ink-2);
-  background: transparent;
-  border: none;
-  padding: 0;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.hint-more:hover {
-  color: var(--ink);
-}
+/* 二段目 (操作)。一段目の考え方と区切って、答えを読むかは目線で選ばせる */
 .hint-move {
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px dashed var(--line);
+}
+/* ボタンとツールチップの間の 8px の隙間をホバーで渡れるようにする透明ブリッジ。
+   これが無いと、カーソルを乗せに行く途中でホバーが切れて消える */
+.hint-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 0;
+  right: 0;
+  height: 10px;
 }
 
 /* ---------- banner ---------- */

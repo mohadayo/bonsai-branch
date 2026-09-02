@@ -171,9 +171,6 @@ export default function App(): React.ReactElement {
   // 画面外の分岐ボタンにフォーカスがある枝。盤面の節にリングを出す
   const [focusedBranch, setFocusedBranch] = useState<string | null>(null);
   const [hintOpen, setHintOpen] = useState<boolean>(false);
-  // ヒントは二段階。開くと考え方 (idea) だけが出て、操作 (hint) は
-  // 「操作まで見る」を押した人にだけ見せる。いきなり答えにしない
-  const [hintMoveShown, setHintMoveShown] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(() =>
     typeof window !== 'undefined'
       ? window.matchMedia('(max-width: 720px)').matches
@@ -238,7 +235,6 @@ export default function App(): React.ReactElement {
     setGoalRevealed(false);
     setMode('merge');
     setHintOpen(false);
-    setHintMoveShown(false);
     setOpError(null);
     setPicked(null);
     setFocusedBranch(null);
@@ -713,20 +709,11 @@ export default function App(): React.ReactElement {
               <span className="hint-icon">?</span>
               ヒント
             </button>
+            {/* 考え方 → 操作の順。先に判断基準を読ませ、操作は区切りの下に置く */}
             <div id="hint-tooltip" className="hint-tooltip">
               <strong>ヒント</strong>
               <p>{stage.idea}</p>
-              {hintMoveShown ? (
-                <p className="hint-move">{stage.hint}</p>
-              ) : (
-                <button
-                  type="button"
-                  className="hint-more"
-                  onClick={() => setHintMoveShown(true)}
-                >
-                  操作まで見る
-                </button>
-              )}
+              <p className="hint-move">{stage.hint}</p>
             </div>
           </div>
         </div>
