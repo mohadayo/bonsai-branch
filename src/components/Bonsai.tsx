@@ -933,15 +933,20 @@ export function Bonsai({
         <BlossomBurst key={recentMergeId} at={lay.positions[recentMergeId]!} />
       )}
 
-      {/* 進捗に応じて、根に近い節から順に咲かせる。木の形は変えないので
-          viewBox の縦横比も動かない */}
+      {/* 進捗に応じて咲かせる。花が付くのは枝の先からで、先端 → 内側の順に
+          増えていき、鉢に埋まった根元の節は満開のときにだけ咲く。
+          根元から咲かせると、序盤は鉢と重なった花が 1 輪だけ浮いてしまう。
+          木の形は変えないので viewBox の縦横比も動かない */}
       {bloomCount > 0 &&
         Object.values(state.commits)
           .slice()
           .sort((a, b) => {
+            const tipA = heads.has(a.id) ? 0 : 1;
+            const tipB = heads.has(b.id) ? 0 : 1;
+            if (tipA !== tipB) return tipA - tipB;
             const ga = generations[a.id] ?? 0;
             const gb = generations[b.id] ?? 0;
-            return ga !== gb ? ga - gb : a.id.localeCompare(b.id);
+            return ga !== gb ? gb - ga : a.id.localeCompare(b.id);
           })
           .slice(0, bloomCount)
           .map((c) => {
