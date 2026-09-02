@@ -1,0 +1,5 @@
+{
+  // Cloudflare Pages のプロジェクト名。bonsai-branch.pages.dev と対応する
+  "name": "bonsai-branch",
+  "pages_build_output_dir": "dist"
+}
