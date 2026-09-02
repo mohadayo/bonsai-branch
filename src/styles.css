@@ -176,6 +176,14 @@ button {
   align-items: baseline;
   font-size: 12.5px;
 }
+/* 全問終えたときの樹歴。札に彫られた記録として、この行だけ強くする */
+.plate-row.done dd {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--bark);
+  letter-spacing: 0.06em;
+}
 .plate-row dt {
   font-family: var(--display);
   color: var(--ink-3);
@@ -375,6 +383,16 @@ button {
 }
 .meta-chapter {
   color: var(--ink-3);
+}
+.meta-cleared {
+  font-family: var(--display);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  color: var(--moss);
+  border: 1px solid var(--moss);
+  border-radius: 2px;
+  padding: 1px 6px;
+  margin-left: 2px;
 }
 .t {
   font-family: var(--display);

@@ -175,8 +175,11 @@ export default function App(): React.ReactElement {
     return stages.length - 1;
   }, [cleared]);
   const isAllCleared = cleared.size === stages.length;
-  const isFinalClear =
-    isCleared && stageIndex === stages.length - 1 && isAllCleared;
+  // gotoStage が maxUnlockedIndex より先へ行かせないので、ステージは順番にしか
+  // 進めない。つまり最終ステージを解いた時点で全問クリアが確定している。
+  // ここで isAllCleared を見ると、cleared に加える useEffect が走るまで false の
+  // ままなので、いちばんの見せ場で「正解」が一度出てから「全クリア」に化ける。
+  const isFinalClear = isCleared && stageIndex === stages.length - 1;
 
   const invalidDropBranchIds = useMemo(() => {
     const s = new Set<string>();
@@ -357,6 +360,23 @@ export default function App(): React.ReactElement {
     setStageIndex(idx);
   }
 
+  // ステージを解いていない状態から始める。stageIndex が変わらないときは
+  // [stage] の useEffect が走らないので、盤面はここで初期化する
+  function startFresh(idx: number): void {
+    const next = stages[idx];
+    if (!next) return;
+    setStageIndex(idx);
+    setState(next.initial);
+    setHistory([]);
+    setRecentCommitId(null);
+    setCommandLog([]);
+    setGoalRevealed(false);
+    setMode('merge');
+    setHintOpen(false);
+    setOpError(null);
+    setView('play');
+  }
+
   return (
     <motion.div
       className="app"
@@ -446,11 +466,11 @@ export default function App(): React.ReactElement {
                 <dt>扱う操作</dt>
                 <dd className="plate-ops">{HOME_OPS.join('・')}</dd>
               </div>
-              <div className="plate-row">
+              <div className={`plate-row ${isAllCleared ? 'done' : ''}`}>
                 <dt>樹歴</dt>
                 <dd>
                   {isAllCleared
-                    ? `${stages.length} 問すべて制覇`
+                    ? `全 ${stages.length} 問 制覇`
                     : cleared.size > 0
                       ? `${cleared.size} 問まで`
                       : 'まだ手をつけていない'}
@@ -458,26 +478,48 @@ export default function App(): React.ReactElement {
               </div>
             </dl>
             <div className="home-cta">
-              <button
-                type="button"
-                className="btn primary home-start"
-                onClick={() => setView('play')}
-              >
-                {cleared.size > 0
-                  ? `続きから　#${String(stageIndex + 1).padStart(2, '0')}`
-                  : 'はじめる'}
-              </button>
-              {cleared.size > 0 && stageIndex !== 0 && (
-                <button
-                  type="button"
-                  className="btn home-start-from-zero"
-                  onClick={() => {
-                    setStageIndex(0);
-                    setView('play');
-                  }}
-                >
-                  はじめから見直す
-                </button>
+              {/* 全部終わっている人に「続きから」は出さない。続きが無いので */}
+              {isAllCleared ? (
+                <>
+                  <button
+                    type="button"
+                    className="btn primary home-start"
+                    onClick={() => startFresh(0)}
+                  >
+                    もう一度あそぶ　#01
+                  </button>
+                  {/* 解き直している途中で戻ってきた人が、その問題に帰れるように */}
+                  {stageIndex !== 0 && (
+                    <button
+                      type="button"
+                      className="btn home-start-from-zero"
+                      onClick={() => setView('play')}
+                    >
+                      #{String(stageIndex + 1).padStart(2, '0')} を開く
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="btn primary home-start"
+                    onClick={() => setView('play')}
+                  >
+                    {cleared.size > 0
+                      ? `続きから　#${String(stageIndex + 1).padStart(2, '0')}`
+                      : 'はじめる'}
+                  </button>
+                  {cleared.size > 0 && stageIndex !== 0 && (
+                    <button
+                      type="button"
+                      className="btn home-start-from-zero"
+                      onClick={() => startFresh(0)}
+                    >
+                      はじめから見直す
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -542,6 +584,10 @@ export default function App(): React.ReactElement {
             #{String(stageIndex + 1).padStart(2, '0')}
           </span>
           <span className="meta-chapter">{stage.chapter}</span>
+          {/* 初見なのか解き直しているのかが分かるようにする */}
+          {cleared.has(stage.id) && !isCleared && (
+            <span className="meta-cleared">クリア済み</span>
+          )}
         </div>
         <h2 className="t">{stage.title}</h2>
         <p className="d">{stage.description}</p>
@@ -715,9 +761,9 @@ export default function App(): React.ReactElement {
               </ol>
               {isFinalClear ? (
                 <p className="solved-lesson final-lesson">
-                  盆栽、立派に育ちました。20 問ぜんぶ制覇、お疲れさまでした。
-                  ここまで来た方は merge / rebase / cherry-pick / squash / revert / reset
-                  を実務シナリオで判断できる素地があります。
+                  盆栽、立派に育ちました。
+                  {stages.length} 問ぜんぶ制覇、お疲れさまでした。
+                  もう「どの操作を選ぶか」で迷う場面は、だいぶ減っているはずです。
                 </p>
               ) : (
                 stage.lesson && (
@@ -760,9 +806,12 @@ export default function App(): React.ReactElement {
             次へ →
           </button>
         )}
-        {isFinalClear && (
+        {/* 解き終えた問題を開き直しているときは、ここからホームに戻れないと
+            ロゴを押すしか手が無くなる。全クリアの回だけは主役として出す。
+            初めて解いた直後は「次へ」が主役なので、並べて出さない */}
+        {(isFinalClear || (cleared.has(stage.id) && !isCleared)) && (
           <button
-            className="btn primary"
+            className={`btn ${isFinalClear ? 'primary' : ''}`}
             onClick={() => setView('home')}
           >
             ホームへ →
