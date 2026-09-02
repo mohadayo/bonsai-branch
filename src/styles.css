@@ -857,6 +857,30 @@ button {
 }
 
 /* ---------- command line ---------- */
+/* 成立しない操作をしたときの一言。クリア表示と同じ場所に、入れ替わりで出す */
+.op-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 640px;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--vermilion);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.op-error-mark {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--vermilion);
+}
+
 .cmd-line {
   /* クリアするまで中身が空なので、その間の高さは盤面に回す */
   min-height: 0;

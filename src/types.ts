@@ -34,4 +34,6 @@ export interface MergeResult {
   readonly command: string;
   readonly newCommitId: string | null;
   readonly ok: boolean;
+  /** ok が false のとき、その操作が成立しない理由。UI 上で起こり得ない弾き方には付けない */
+  readonly reason?: string;
 }

@@ -13,6 +13,14 @@ export function hashOf(id: string): string {
   return h.toString(16).padStart(6, '0').slice(0, 6);
 }
 
+/**
+ * 操作が成立しないときの結果。reason は UI が「なぜダメか」を出すために使う。
+ * ドラッグ元と同じ枝に落とした場合など、UI 上そもそも起こせない弾き方には付けない。
+ */
+function fail(state: BonsaiState, reason?: string): MergeResult {
+  return { state, command: '', newCommitId: null, ok: false, reason };
+}
+
 export function stepsRemaining(
   current: BonsaiState,
   target: BonsaiState,
@@ -28,19 +36,25 @@ export function mergeBranches(
   targetBranchId: string,
 ): MergeResult {
   if (sourceBranchId === targetBranchId) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   const source = state.branches[sourceBranchId];
   const target = state.branches[targetBranchId];
   if (!source || !target) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   if (source.head === target.head) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(
+      state,
+      `${source.name} と ${target.name} は同じコミットを指しています`,
+    );
   }
   // 既に source が target の祖先なら取り込み済み → 空マージを作らない
   if (ancestorsOf(state, target.head).has(source.head)) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(
+      state,
+      `${source.name} はすでに ${target.name} に取り込まれています`,
+    );
   }
   // 注: fast-forward 検出はしない。
   // 学習目的なので、未取り込みの merge は明示的に merge commit を作る (git merge --no-ff 相当)。
@@ -76,24 +90,30 @@ export function rebaseBranch(
   targetBranchId: string,
 ): MergeResult {
   if (sourceBranchId === targetBranchId) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   const source = state.branches[sourceBranchId];
   const target = state.branches[targetBranchId];
   if (!source || !target) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   const base = findMergeBase(state, source.head, target.head);
   if (!base) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   // 既に target.head の上にある（base === target.head）なら no-op
   if (base === target.head) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(
+      state,
+      `${source.name} はすでに ${target.name} の先端の上にあります`,
+    );
   }
   const toReplay = chainBefore(state, source.head, base).reverse();
   if (toReplay.length === 0) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(
+      state,
+      `${source.name} に ${target.name} へ載せ替えるコミットがありません`,
+    );
   }
 
   const newCommits: Record<string, Commit> = { ...state.commits };
@@ -140,23 +160,29 @@ export function cherryPickBranch(
   targetBranchId: string,
 ): MergeResult {
   if (sourceBranchId === targetBranchId) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   const source = state.branches[sourceBranchId];
   const target = state.branches[targetBranchId];
   if (!source || !target) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   if (source.head === target.head) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(
+      state,
+      `${source.name} と ${target.name} は同じコミットを指しています`,
+    );
   }
   // 既に target の祖先にいるなら no-op（既に取り込まれている）
   if (ancestorsOf(state, target.head).has(source.head)) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(
+      state,
+      `${source.name} の先端のコミットは、すでに ${target.name} に入っています`,
+    );
   }
   const sourceCommit = state.commits[source.head];
   if (!sourceCommit) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   const newId = newCommitId();
   const newCommit: Commit = {
@@ -186,20 +212,23 @@ export function revertBranch(
   targetBranchId: string,
 ): MergeResult {
   if (sourceBranchId === targetBranchId) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   const source = state.branches[sourceBranchId];
   const target = state.branches[targetBranchId];
   if (!source || !target) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   // revert する対象 (source.head) が target に取り込まれている必要がある
   if (!ancestorsOf(state, target.head).has(source.head)) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(
+      state,
+      `revert できるのは取り込み済みのコミットだけです。${source.name} の先端はまだ ${target.name} に入っていません`,
+    );
   }
   const sourceCommit = state.commits[source.head];
   if (!sourceCommit) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   const newId = newCommitId();
   const newCommit: Commit = {
@@ -229,19 +258,25 @@ export function resetBranch(
   targetBranchId: string,
 ): MergeResult {
   if (sourceBranchId === targetBranchId) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   const source = state.branches[sourceBranchId];
   const target = state.branches[targetBranchId];
   if (!source || !target) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   if (source.head === target.head) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(
+      state,
+      `${source.name} と ${target.name} は同じコミットを指しています`,
+    );
   }
   // 巻き戻し: target.head は source.head の祖先である必要がある
   if (!ancestorsOf(state, source.head).has(target.head)) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(
+      state,
+      `reset で戻せるのは ${source.name} 自身の履歴にあるコミットだけです。${target.name} の先端はそこにありません`,
+    );
   }
   const newBranches = {
     ...state.branches,
@@ -262,27 +297,36 @@ export function squashMergeBranches(
   targetBranchId: string,
 ): MergeResult {
   if (sourceBranchId === targetBranchId) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   const source = state.branches[sourceBranchId];
   const target = state.branches[targetBranchId];
   if (!source || !target) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   if (source.head === target.head) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(
+      state,
+      `${source.name} と ${target.name} は同じコミットを指しています`,
+    );
   }
   const base = findMergeBase(state, source.head, target.head);
   if (!base) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(state);
   }
   // 既に target の祖先 (＝ source は merge 済み) なら squash 対象なし
   if (base === source.head) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(
+      state,
+      `${target.name} にまとめて取り込む差分が ${source.name} にありません`,
+    );
   }
   const toSquash = chainBefore(state, source.head, base);
   if (toSquash.length === 0) {
-    return { state, command: '', newCommitId: null, ok: false };
+    return fail(
+      state,
+      `${target.name} にまとめて取り込む差分が ${source.name} にありません`,
+    );
   }
   const newId = newCommitId();
   const newCommit: Commit = {

@@ -134,6 +134,9 @@ export default function App(): React.ReactElement {
   const [state, setState] = useState<BonsaiState>(stage.initial);
   const [recentCommitId, setRecentCommitId] = useState<string | null>(null);
   const [commandLog, setCommandLog] = useState<string[]>([]);
+  // 成立しない操作をしたときの一言。同じ文言が続けて出ても消えるまでを測り直せるよう、
+  // 毎回新しいオブジェクトにする
+  const [opError, setOpError] = useState<{ text: string } | null>(null);
   const [goalRevealed, setGoalRevealed] = useState(false);
   const yourBoxRef = useRef<HTMLDivElement>(null);
   const goalBoxRef = useRef<HTMLDivElement>(null);
@@ -191,6 +194,7 @@ export default function App(): React.ReactElement {
     setGoalRevealed(false);
     setMode('merge');
     setHintOpen(false);
+    setOpError(null);
   }, [stage]);
 
   // モバイルでタップ操作するため、外側クリック / Escape で閉じる
@@ -225,6 +229,13 @@ export default function App(): React.ReactElement {
     const t = window.setTimeout(() => setRecentCommitId(null), 1700);
     return () => window.clearTimeout(t);
   }, [recentCommitId]);
+
+  // 操作が成立しなかった理由を 3s で消す
+  useEffect(() => {
+    if (!opError) return;
+    const t = window.setTimeout(() => setOpError(null), 3000);
+    return () => window.clearTimeout(t);
+  }, [opError]);
 
   // 枠のサイズを計測して SVG の viewBox aspect を合わせる
   // view が 'home' → 'play' に切り替わった時に ref が初めて DOM に付くため、view を依存に入れる
@@ -307,7 +318,11 @@ export default function App(): React.ReactElement {
     const target = targetMatch[1]!;
     if (source === target) return;
     const result = applyOp(state, mode, source, target);
-    if (!result.ok) return;
+    if (!result.ok) {
+      if (result.reason) setOpError({ text: result.reason });
+      return;
+    }
+    setOpError(null);
     setHistory((h) => [...h, state]);
     setState(result.state);
     setRecentCommitId(result.newCommitId);
@@ -319,6 +334,7 @@ export default function App(): React.ReactElement {
     setHistory([]);
     setRecentCommitId(null);
     setCommandLog([]);
+    setOpError(null);
   }
 
   function undo(): void {
@@ -328,6 +344,7 @@ export default function App(): React.ReactElement {
     setRecentCommitId(null);
     setHistory((h) => h.slice(0, -1));
     setCommandLog((log) => log.slice(0, -1));
+    setOpError(null);
   }
 
   function gotoStage(idx: number): void {
@@ -743,6 +760,18 @@ export default function App(): React.ReactElement {
                   <p className="solved-lesson">{stage.lesson}</p>
                 )
               )}
+            </motion.div>
+          ) : opError ? (
+            <motion.div
+              key="op-error"
+              className="op-error"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              <span className="op-error-mark" aria-hidden="true" />
+              {opError.text}
             </motion.div>
           ) : null}
         </AnimatePresence>
