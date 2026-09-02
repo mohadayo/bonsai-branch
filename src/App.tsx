@@ -175,6 +175,14 @@ export default function App(): React.ReactElement {
     return stages.length - 1;
   }, [cleared]);
   const isAllCleared = cleared.size === stages.length;
+  // ホームの飾り木は、解いた数だけ根元から花が咲く。全問解くと満開になる。
+  // 木の形そのものは変えない（枝を足すと viewBox の縦横比が動いて余白が出る）
+  const heroBloomCount = useMemo(() => {
+    const nodes = Object.keys(heroState.commits).length;
+    if (cleared.size === 0) return 0;
+    if (cleared.size >= stages.length) return nodes;
+    return Math.max(1, Math.round((cleared.size / stages.length) * nodes));
+  }, [cleared.size]);
   // gotoStage が maxUnlockedIndex より先へ行かせないので、ステージは順番にしか
   // 進めない。つまり最終ステージを解いた時点で全問クリアが確定している。
   // ここで isAllCleared を見ると、cleared に加える useEffect が走るまで false の
@@ -445,6 +453,7 @@ export default function App(): React.ReactElement {
                 isMobile ? HERO_ASPECT_MOBILE : HERO_ASPECT_DESKTOP
               }
               isMobile={isMobile}
+              bloomCount={heroBloomCount}
               bare
             />
           </div>

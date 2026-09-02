@@ -545,14 +545,18 @@ function CommitDot(props: CommitDotProps): ReactElement {
   return <StaticCommitDot {...rest} />;
 }
 
-function Bloom({ at }: { at: Pos }): ReactElement {
+function Bloom({ at, small = false }: { at: Pos; small?: boolean }): ReactElement {
   const petalCount = 6;
   const petalColors = ['#f7c5d4', '#f9b3c5', '#fbd9e2', '#fdeaef'];
+  // 進捗の花はいくつも並ぶ。節 (半径 13) を埋めてしまうと枝の色が読めなくなるので、
+  // 花弁は節の外側に置き、中心の芯も描かない
+  const petalRx = small ? 5 : 8;
+  const petalRy = small ? 3.4 : 5.5;
   return (
     <g transform={`translate(${at.x}, ${at.y})`} pointerEvents="none">
       {Array.from({ length: petalCount }).map((_, i) => {
         const baseAngle = (i / petalCount) * Math.PI * 2 - Math.PI / 2;
-        const distance = 18;
+        const distance = small ? 17 : 18;
         const cx = Math.cos(baseAngle) * distance;
         const cy = Math.sin(baseAngle) * distance;
         return (
@@ -571,8 +575,8 @@ function Bloom({ at }: { at: Pos }): ReactElement {
             <ellipse
               cx={cx}
               cy={cy}
-              rx={8}
-              ry={5.5}
+              rx={petalRx}
+              ry={petalRy}
               fill={petalColors[i % petalColors.length]!}
               stroke="#d97a91"
               strokeWidth={0.7}
@@ -581,15 +585,17 @@ function Bloom({ at }: { at: Pos }): ReactElement {
           </motion.g>
         );
       })}
-      <motion.circle
-        r={4.5}
-        fill="#fff3b8"
-        stroke="#d4a04a"
-        strokeWidth={0.8}
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 0.4, delay: 0.35 }}
-      />
+      {!small && (
+        <motion.circle
+          r={4.5}
+          fill="#fff3b8"
+          stroke="#d4a04a"
+          strokeWidth={0.8}
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.4, delay: 0.35 }}
+        />
+      )}
     </g>
   );
 }
@@ -641,6 +647,7 @@ export function Bonsai({
   invalidDropBranchIds,
   containerAspect = null,
   bloomAll = false,
+  bloomCount = 0,
   isMobile = false,
   solved = false,
   bare = false,
@@ -651,6 +658,8 @@ export function Bonsai({
   invalidDropBranchIds?: ReadonlySet<string>;
   containerAspect?: number | null;
   bloomAll?: boolean;
+  /** 根に近いほうから数えて、いくつの節に花を咲かせるか（ホームの飾り木で進捗を表す） */
+  bloomCount?: number;
   isMobile?: boolean;
   solved?: boolean;
   /** 和紙の下地を描かない。呼び出し側が自前の背景を持つ場合に使う（ホームの飾り） */
@@ -854,6 +863,23 @@ export function Bonsai({
       {recentMergeId && lay.positions[recentMergeId] && (
         <BlossomBurst key={recentMergeId} at={lay.positions[recentMergeId]!} />
       )}
+
+      {/* 進捗に応じて、根に近い節から順に咲かせる。木の形は変えないので
+          viewBox の縦横比も動かない */}
+      {bloomCount > 0 &&
+        Object.values(state.commits)
+          .slice()
+          .sort((a, b) => {
+            const ga = generations[a.id] ?? 0;
+            const gb = generations[b.id] ?? 0;
+            return ga !== gb ? ga - gb : a.id.localeCompare(b.id);
+          })
+          .slice(0, bloomCount)
+          .map((c) => {
+            const pos = lay.positions[c.id];
+            if (!pos) return null;
+            return <Bloom key={`bloom-${c.id}`} at={pos} small />;
+          })}
 
       {/* クリア時：最も進んだ commit 一つだけに花 */}
       {bloomAll && (() => {
