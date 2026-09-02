@@ -93,7 +93,7 @@ button {
 }
 .logo-text {
   font-family: var(--display);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 25px;
   letter-spacing: 0.08em;
   display: block;
@@ -116,7 +116,7 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(16px, 2.2vw, 24px);
+  gap: 20px;
   flex: 1;
   min-height: 0;
   padding-bottom: 8px;
@@ -141,8 +141,9 @@ button {
     0 -1px 0 rgba(255, 255, 255, 0.6),
     0 10px 28px rgba(35, 42, 43, 0.12);
   padding: 22px clamp(20px, 4vw, 34px) 20px;
-  /* 木の足元に立てかかって見えるよう、根元と少し重ねる */
-  margin-top: -22px;
+  /* 木の足元に立てかかって見えるよう、根元と少し重ねる。
+     .home の gap 20px と相殺されるので、その分を含めた値にする */
+  margin-top: -42px;
   position: relative;
   z-index: 1;
 }
@@ -206,7 +207,7 @@ button {
   padding: 9px 14px;
   background: transparent;
   border-color: transparent;
-  color: var(--ink-3);
+  color: var(--ink-2);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -257,19 +258,14 @@ button {
   text-align: center;
 }
 
-/* 飾りの盆栽を置く「床の間」 */
-/* 和紙の目のような細い横罫 */
-/* 盆栽を載せる床の線 */
-
-
 @media (max-width: 720px) {
   .home-tree {
     width: min(420px, 100%);
     aspect-ratio: 1.05;
   }
   .plate {
-    /* 木が小さくなるぶん、重ねる量も浅くする */
-    margin-top: -12px;
+    /* 木が小さくなるぶん、重ねる量も浅くする (gap 20px を含む) */
+    margin-top: -32px;
   }
   .plate-row {
     grid-template-columns: 4.5em 1fr;
@@ -380,7 +376,7 @@ button {
 }
 .t {
   font-family: var(--display);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 22px;
   color: var(--ink);
   letter-spacing: 0.04em;
@@ -530,7 +526,7 @@ button {
 .board.cleared {
   box-shadow:
     0 0 0 1px var(--moss),
-    0 0 24px rgba(122, 139, 86, 0.28),
+    0 0 24px rgba(93, 112, 82, 0.28),
     var(--shadow);
 }
 .bh {
@@ -595,9 +591,9 @@ button {
   justify-content: center;
   pointer-events: none;
   font-size: 140px;
-  color: rgba(122, 139, 86, 0.45);
+  color: rgba(93, 112, 82, 0.45);
   font-family: var(--display);
-  font-weight: 700;
+  font-weight: 600;
   z-index: 2;
 }
 
@@ -831,7 +827,7 @@ button {
   width: 100%;
   max-width: 720px;
   background: var(--surface);
-  border: 1px solid rgba(122, 139, 86, 0.4);
+  border: 1px solid rgba(93, 112, 82, 0.4);
   border-left: 3px solid var(--moss);
   border-radius: var(--r);
   padding: 14px 18px 14px 16px;
@@ -840,7 +836,7 @@ button {
   gap: 10px;
   box-shadow:
     0 1px 2px rgba(35, 42, 43, 0.04),
-    0 8px 24px rgba(122, 139, 86, 0.12);
+    0 8px 24px rgba(93, 112, 82, 0.12);
 }
 .solved-head {
   display: flex;
@@ -849,7 +845,7 @@ button {
 }
 .solved-badge {
   font-family: var(--display);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 11px;
   letter-spacing: 0.18em;
   color: #fff;

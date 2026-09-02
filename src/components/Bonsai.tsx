@@ -16,6 +16,8 @@ const PAD_X_RIGHT = 180;
 const PAD_TOP = 46;
 const PAD_BOTTOM = 64;
 const NODE_R = 13;
+// Pot の影の楕円がいちばん外側。鉢を viewBox 内に収める判定に使う
+const POT_HALF_W = 52;
 
 interface Pos {
   x: number;
@@ -35,15 +37,16 @@ function layout(
   state: BonsaiState,
   containerAspect: number | null,
   isMobile: boolean,
-  showMessages: boolean,
+  isDecorative: boolean,
 ): LayoutResult {
   // モバイルでは左右パディングを詰めて、 縦長コンテナでも上下に余白が出すぎないようにする。
   // padXRight はコミットメッセージ (例: "ログインフォーム追加" = 約 120px) が右端で
   // 見切れない長さを確保する。 NODE_R(13) + 10 + 文字幅 = 約 145px なので 150 を採用。
   const padX = isMobile ? 36 : PAD_X;
-  // メッセージを描かない場面 (ホームの飾り木・目標の盆栽) では右の逃げが要らない。
-  // 確保したままだと枝の列が左に寄って、木が中央から外れて見える
-  const padXRight = showMessages ? (isMobile ? 150 : PAD_X_RIGHT) : padX;
+  // ホームの飾り木だけは右の逃げが要らない。確保したままだと枝の列が左に寄る。
+  // 「いま」と「目標」の盤面では詰めない: naturalW が変わると同じ幅の枠に
+  // 別スケールで描かれてしまい、形を見比べるという遊びが成立しなくなる
+  const padXRight = isDecorative ? padX : isMobile ? 150 : PAD_X_RIGHT;
 
   const generations = computeGenerations(state);
   const branchIndex: Record<string, number> = {};
@@ -96,12 +99,18 @@ function layout(
     positions[id] = { x: p.x + offsetX, y: p.y + offsetY };
   }
   // 鉢は幹が立ち上がる位置の真下に置く。viewBox の中央に固定すると、
-  // 枝の列が左寄りのときに木と鉢がずれて浮いて見える
+  // 枝の列が左寄りのときに木と鉢がずれて浮いて見える。
+  // ただし padX (モバイルは 36) は鉢の半幅より小さいので、そのまま置くと
+  // 鉢の左側が viewBox の外に出る。左右とも内側に収まる位置へ寄せる
   const rootBranch = state.branchOrder[0];
-  const potCenterX =
+  const rootX =
     rootBranch !== undefined
       ? padX + (branchIndex[rootBranch] ?? 0) * COL_W + offsetX
       : width / 2;
+  const potCenterX = Math.min(
+    Math.max(rootX, POT_HALF_W),
+    Math.max(width - POT_HALF_W, POT_HALF_W),
+  );
   const potY = height - 56;
   return { width, height, positions, potCenterX, potY, offsetX, padX };
 }
@@ -642,8 +651,8 @@ export function Bonsai({
   bare?: boolean;
 }): ReactElement {
   const lay = useMemo(
-    () => layout(state, containerAspect, isMobile, interactive),
-    [state, containerAspect, isMobile, interactive],
+    () => layout(state, containerAspect, isMobile, bare),
+    [state, containerAspect, isMobile, bare],
   );
   const generations = useMemo(() => computeGenerations(state), [state]);
   const heads = useMemo(

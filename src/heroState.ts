@@ -11,9 +11,9 @@ import type { BonsaiState } from './types';
 export const heroState: BonsaiState = {
   branchOrder: ['main', 'feature', 'develop'],
   branches: {
-    main: { id: 'main', name: 'main', head: 'm2', color: '#9a6a3a' },
-    feature: { id: 'feature', name: 'feature', head: 'f3', color: '#c89a3e' },
-    develop: { id: 'develop', name: 'develop', head: 'd2', color: '#5e8c4a' },
+    main: { id: 'main', name: 'main', head: 'm2', color: '#7d5740' },
+    feature: { id: 'feature', name: 'feature', head: 'f3', color: '#ab8b4b' },
+    develop: { id: 'develop', name: 'develop', head: 'd2', color: '#6d8763' },
   },
   commits: {
     m1: { id: 'm1', parents: [], branch: 'main', message: '土をならす' },

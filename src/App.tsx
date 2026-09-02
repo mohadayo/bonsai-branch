@@ -377,7 +377,7 @@ export default function App(): React.ReactElement {
             >
               <path
                 d="M 18 26 Q 42 8 78 14 Q 116 20 154 6"
-                stroke="#7a5e3a"
+                stroke="#7d5740"
                 strokeWidth={1.1}
                 fill="none"
                 strokeLinecap="round"
@@ -385,7 +385,7 @@ export default function App(): React.ReactElement {
               />
               <path
                 d="M 78 14 Q 84 6 92 3"
-                stroke="#7a5e3a"
+                stroke="#7d5740"
                 strokeWidth={0.8}
                 fill="none"
                 strokeLinecap="round"
@@ -393,18 +393,18 @@ export default function App(): React.ReactElement {
               />
               <path
                 d="M 120 17 Q 126 11 134 9"
-                stroke="#7a5e3a"
+                stroke="#7d5740"
                 strokeWidth={0.8}
                 fill="none"
                 strokeLinecap="round"
                 opacity={0.7}
               />
-              <circle cx="42" cy="14" r="2.6" fill="#7a8b56" />
-              <circle cx="78" cy="14" r="2.2" fill="#a47b35" />
-              <circle cx="92" cy="3" r="1.9" fill="#7a8b56" />
-              <circle cx="120" cy="17" r="2.2" fill="#c44a3a" />
-              <circle cx="134" cy="9" r="1.9" fill="#a47b35" />
-              <circle cx="154" cy="6" r="2.4" fill="#7a8b56" />
+              <circle cx="42" cy="14" r="2.6" fill="#6d8763" />
+              <circle cx="78" cy="14" r="2.2" fill="#ab8b4b" />
+              <circle cx="92" cy="3" r="1.9" fill="#6d8763" />
+              <circle cx="120" cy="17" r="2.2" fill="#9c4b58" />
+              <circle cx="134" cy="9" r="1.9" fill="#ab8b4b" />
+              <circle cx="154" cy="6" r="2.4" fill="#6d8763" />
             </svg>
             <span className="logo-text">盆栽ブランチ</span>
           </button>
