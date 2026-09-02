@@ -13,9 +13,11 @@ const ROW_H_MIN = 48;
 const MAX_TRUNK_HEIGHT = 220;
 const PAD_X = 80;
 const PAD_X_RIGHT = 180;
-const PAD_TOP = 60;
-const PAD_BOTTOM = 96;
+const PAD_TOP = 46;
+const PAD_BOTTOM = 64;
 const NODE_R = 13;
+// Pot の影の楕円がいちばん外側。鉢を viewBox 内に収める判定に使う
+const POT_HALF_W = 52;
 
 interface Pos {
   x: number;
@@ -35,12 +37,16 @@ function layout(
   state: BonsaiState,
   containerAspect: number | null,
   isMobile: boolean,
+  isDecorative: boolean,
 ): LayoutResult {
   // モバイルでは左右パディングを詰めて、 縦長コンテナでも上下に余白が出すぎないようにする。
   // padXRight はコミットメッセージ (例: "ログインフォーム追加" = 約 120px) が右端で
   // 見切れない長さを確保する。 NODE_R(13) + 10 + 文字幅 = 約 145px なので 150 を採用。
   const padX = isMobile ? 36 : PAD_X;
-  const padXRight = isMobile ? 150 : PAD_X_RIGHT;
+  // ホームの飾り木だけは右の逃げが要らない。確保したままだと枝の列が左に寄る。
+  // 「いま」と「目標」の盤面では詰めない: naturalW が変わると同じ幅の枠に
+  // 別スケールで描かれてしまい、形を見比べるという遊びが成立しなくなる
+  const padXRight = isDecorative ? padX : isMobile ? 150 : PAD_X_RIGHT;
 
   const generations = computeGenerations(state);
   const branchIndex: Record<string, number> = {};
@@ -92,41 +98,34 @@ function layout(
     const p = positions[id]!;
     positions[id] = { x: p.x + offsetX, y: p.y + offsetY };
   }
-  const potCenterX = width / 2;
+  // 鉢は幹が立ち上がる位置の真下に置く。viewBox の中央に固定すると、
+  // 枝の列が左寄りのときに木と鉢がずれて浮いて見える。
+  // ただし padX (モバイルは 36) は鉢の半幅より小さいので、そのまま置くと
+  // 鉢の左側が viewBox の外に出る。左右とも内側に収まる位置へ寄せる
+  const rootBranch = state.branchOrder[0];
+  const rootX =
+    rootBranch !== undefined
+      ? padX + (branchIndex[rootBranch] ?? 0) * COL_W + offsetX
+      : width / 2;
+  const potCenterX = Math.min(
+    Math.max(rootX, POT_HALF_W),
+    Math.max(width - POT_HALF_W, POT_HALF_W),
+  );
   const potY = height - 56;
   return { width, height, positions, potCenterX, potY, offsetX, padX };
 }
 
 function Pot({ cx, cy }: { cx: number; cy: number }): ReactElement {
+  // 主役は木なので、鉢は幅も高さも控えめにして色の主張も抑える
   return (
     <g transform={`translate(${cx}, ${cy})`}>
-      <ellipse cx={0} cy={42} rx={92} ry={9} fill="rgba(0,0,0,0.32)" />
+      <ellipse cx={0} cy={23} rx={52} ry={5} fill="rgba(35, 42, 43, 0.14)" />
       <path
-        d="M -78 0 L 78 0 L 64 36 Q 64 42 56 42 L -56 42 Q -64 42 -64 36 Z"
-        fill="#5b3a25"
+        d="M -46 0 L 46 0 L 37 20 Q 37 24 32 24 L -32 24 Q -37 24 -37 20 Z"
+        fill="#7a563c"
       />
-      <ellipse cx={0} cy={0} rx={78} ry={9} fill="#3a2417" />
-      <ellipse cx={0} cy={-1} rx={74} ry={7} fill="#231509" />
-      <path
-        d="M -56 14 Q 0 22 56 14"
-        stroke="#3a2417"
-        strokeWidth={1.2}
-        fill="none"
-        opacity={0.5}
-      />
-      <text
-        x={0}
-        y={28}
-        textAnchor="middle"
-        fontSize={9}
-        fill="#c98855"
-        fontFamily="'Shippori Mincho', serif"
-        opacity={0.8}
-      >
-        盆
-      </text>
-      <ellipse cx={-30} cy={-3} rx={20} ry={3} fill="#5e8c4a" opacity={0.55} />
-      <ellipse cx={26} cy={-3} rx={18} ry={3} fill="#7aa05a" opacity={0.5} />
+      <ellipse cx={0} cy={0} rx={46} ry={5.5} fill="#5a4028" />
+      <ellipse cx={0} cy={-1} rx={42} ry={4} fill="#40301f" />
     </g>
   );
 }
@@ -158,45 +157,25 @@ function Edges({
       const isMerge = c.parents.length > 1;
       const sway = pi === 0 ? 0 : 10;
       const d = curvyPath(cp, pp, sway);
+      // 枝は影と本体の 2 枚だけで描く。木目やハイライトを重ねると、
+      // 節と枝のどちらを見ればいいのか分からなくなる
       elems.push(
         <path
           key={`${c.id}-${pid}-shadow`}
           d={d}
-          stroke="rgba(0,0,0,0.3)"
+          stroke="rgba(35, 42, 43, 0.14)"
           strokeWidth={isCrossBranch ? 4 : 6}
           fill="none"
           strokeLinecap="round"
-          transform="translate(1.2, 1.2)"
+          transform="translate(1, 1.4)"
         />,
       );
       elems.push(
         <path
           key={`${c.id}-${pid}`}
           d={d}
-          stroke={isCrossBranch && isMerge ? '#a98660' : branchColor}
+          stroke={isCrossBranch && isMerge ? '#9a8878' : branchColor}
           strokeWidth={isCrossBranch ? 3.5 : 5.5}
-          fill="none"
-          strokeLinecap="round"
-        />,
-      );
-      // 木目の縦線
-      elems.push(
-        <path
-          key={`${c.id}-${pid}-grain`}
-          d={d}
-          stroke="rgba(60, 30, 10, 0.35)"
-          strokeWidth={0.8}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray="6 10"
-        />,
-      );
-      elems.push(
-        <path
-          key={`${c.id}-${pid}-hl`}
-          d={d}
-          stroke="rgba(255, 235, 200, 0.32)"
-          strokeWidth={1}
           fill="none"
           strokeLinecap="round"
         />,
@@ -649,27 +628,6 @@ function BlossomBurst({ at }: { at: Pos }): ReactElement {
   );
 }
 
-function AsanohaPattern({ id }: { id: string }): ReactElement {
-  // 麻の葉文様（簡素化）
-  return (
-    <pattern
-      id={id}
-      width={48}
-      height={42}
-      patternUnits="userSpaceOnUse"
-      patternTransform="rotate(0)"
-    >
-      <g stroke="#7a5e3a" strokeWidth={0.5} fill="none" opacity={0.18}>
-        <path d="M 24 0 L 24 42" />
-        <path d="M 0 21 L 48 21" />
-        <path d="M 0 0 L 48 42" />
-        <path d="M 48 0 L 0 42" />
-        <path d="M 24 0 L 0 21 L 24 42 L 48 21 Z" />
-      </g>
-    </pattern>
-  );
-}
-
 export function Bonsai({
   state,
   interactive = false,
@@ -693,8 +651,8 @@ export function Bonsai({
   bare?: boolean;
 }): ReactElement {
   const lay = useMemo(
-    () => layout(state, containerAspect, isMobile),
-    [state, containerAspect, isMobile],
+    () => layout(state, containerAspect, isMobile, bare),
+    [state, containerAspect, isMobile, bare],
   );
   const generations = useMemo(() => computeGenerations(state), [state]);
   const heads = useMemo(
@@ -702,7 +660,6 @@ export function Bonsai({
     [state],
   );
   const idScope = interactive ? 'a' : 'g';
-  const patternId = `asanoha-${idScope}`;
   const paperId = `paper-light-${idScope}`;
 
   return (
@@ -714,31 +671,20 @@ export function Bonsai({
       aria-label="盆栽"
     >
       <defs>
-        <radialGradient id={paperId} cx="50%" cy="35%" r="80%">
-          <stop offset="0%" stopColor="#f6efe1" />
-          <stop offset="100%" stopColor="#e6dac0" />
+        <radialGradient id={paperId} cx="50%" cy="32%" r="82%">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="100%" stopColor="#e9f0ec" />
         </radialGradient>
-        <AsanohaPattern id={patternId} />
       </defs>
       {!bare && (
-        <>
-          <rect
-            x={0}
-            y={0}
-            width={lay.width}
-            height={lay.height}
-            fill={`url(#${paperId})`}
-            rx={6}
-          />
-          <rect
-            x={0}
-            y={0}
-            width={lay.width}
-            height={lay.height}
-            fill={`url(#${patternId})`}
-            rx={6}
-          />
-        </>
+        <rect
+          x={0}
+          y={0}
+          width={lay.width}
+          height={lay.height}
+          fill={`url(#${paperId})`}
+          rx={6}
+        />
       )}
 
       {state.branchOrder.map((bid, i) => {

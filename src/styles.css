@@ -5,25 +5,35 @@
 }
 
 :root {
-  --bg: #f8f4ea;
+  /* 地は盆栽鉢の釉薬「青磁」。幹の茶と葉の緑がいちばん映える色で、
+     実際の展示台の色でもある */
+  --bg: #d2dfd9;
   --surface: #ffffff;
-  --surface-soft: #fbf7eb;
-  --ink: #1f160d;
-  --ink-2: #4a3a26;
-  --ink-3: #8e7d62;
-  --ink-4: #c4b496;
-  --line: rgba(31, 22, 13, 0.1);
-  --line-strong: rgba(31, 22, 13, 0.2);
-  --vermilion: #c44a3a;
-  --matcha: #7a8b56;
-  --gold: #a47b35;
+  --surface-soft: #f2f7f4;
+  --ink: #232a2b;
+  --ink-2: #46524f;
+  --ink-3: #78857f;
+  --ink-4: #aab5af;
+  --line: rgba(35, 42, 43, 0.12);
+  --line-strong: rgba(35, 42, 43, 0.26);
+  /* 木そのものの色 */
+  --bark: #6f4a32;
+  --moss: #5d7052;
+  /* 6 操作の色。くすんだ伝統色で揃え、どれも地の青磁に沈まない明度にする */
+  --op-merge: #5d7052;
+  --op-rebase: #2f5266;
+  --op-cherry: #8c3f4d;
+  --op-squash: #9a7b3f;
+  --op-revert: #6b6070;
+  --op-reset: #6f4b3a;
   --shadow:
-    0 1px 2px rgba(31, 22, 13, 0.04),
-    0 4px 16px rgba(31, 22, 13, 0.06);
+    0 1px 2px rgba(35, 42, 43, 0.05),
+    0 4px 14px rgba(35, 42, 43, 0.07);
   --r: 8px;
   --r-lg: 12px;
   --mono: 'JetBrains Mono', 'SF Mono', Menlo, ui-monospace, monospace;
-  --serif: 'Shippori Mincho', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  /* 見出しは硬筆・教科書体。盆栽の記録帳や展示札の手書きに連なる */
+  --display: 'Klee One', 'Hiragino Mincho ProN', serif;
   --sans: 'Zen Kaku Gothic New', 'Hiragino Sans', system-ui, sans-serif;
 }
 
@@ -46,7 +56,7 @@ button {
 .app {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 48px 24px 32px;
+  padding: 40px 24px 28px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -82,21 +92,13 @@ button {
   pointer-events: none;
 }
 .logo-text {
-  font-family: var(--serif);
-  font-weight: 700;
+  font-family: var(--display);
+  font-weight: 600;
   font-size: 25px;
   letter-spacing: 0.08em;
   display: block;
   position: relative;
   z-index: 1;
-}
-.logo-pot {
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 22px;
-  height: 10px;
-  pointer-events: none;
 }
 .title-en {
   font-family: var(--mono);
@@ -105,256 +107,172 @@ button {
   color: var(--ink-3);
   letter-spacing: 0.16em;
 }
-.overall {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  font-family: var(--mono);
-}
-.overall-label {
-  font-family: var(--serif);
-  font-size: 11px;
-  color: var(--ink-3);
-  letter-spacing: 0.18em;
-  margin-right: 2px;
-}
-.overall-value {
-  font-size: 18px;
-  color: var(--matcha);
-  font-weight: 700;
-}
-.overall-of {
-  font-size: 11px;
-  color: var(--ink-3);
-}
 
 /* ---------- home ---------- */
+/* 盆栽展の並びに倣う: 木があって、その手前に札がある。
+   左テキスト / 右ビジュアルに割らず、上から下に一列で読ませる */
 .home {
-  display: grid;
-  grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
-  gap: clamp(28px, 5vw, 72px);
-  align-items: center;
-  padding: clamp(4px, 2.4vw, 32px) 0 40px;
-}
-.home-copy {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  min-width: 0;
-}
-
-.home-kicker {
-  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  color: var(--ink-3);
+  justify-content: center;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 8px;
 }
-.home-kicker-mark {
-  width: 20px;
-  height: 1px;
-  background: var(--vermilion);
+.home-tree {
+  /* aspect-ratio は App.tsx の HERO_ASPECT_DESKTOP と必ず揃える。
+     ずれると svg が viewBox を収めきるために左右へ余白を作る */
+  width: min(330px, 100%);
+  aspect-ratio: 0.94;
   flex: none;
+  display: flex;
 }
 
-.home-tagline {
-  font-family: var(--serif);
-  font-size: clamp(30px, 4.4vw, 48px);
-  font-weight: 700;
-  line-height: 1.34;
+/* 札。木の手前に置かれ、銘と素性が書かれている */
+.plate {
+  width: min(560px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--bark);
+  border-radius: 2px 2px var(--r) var(--r);
+  box-shadow:
+    0 -1px 0 rgba(255, 255, 255, 0.6),
+    0 10px 28px rgba(35, 42, 43, 0.12);
+  padding: 22px clamp(20px, 4vw, 34px) 20px;
+  /* 木の足元に立てかかって見えるよう、根元と少し重ねる。
+     .home の gap 20px と相殺されるので、その分を含めた値にする */
+  margin-top: -42px;
+  position: relative;
+  z-index: 1;
+}
+.plate-name {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(21px, 2.6vw, 27px);
+  line-height: 1.5;
   letter-spacing: 0.02em;
   color: var(--ink);
-  margin-top: 18px;
 }
-.home-desc {
-  font-family: var(--serif);
-  font-size: 15.5px;
+.plate-desc {
+  margin-top: 10px;
+  font-size: 13.5px;
+  line-height: 1.9;
   color: var(--ink-2);
-  line-height: 2;
-  letter-spacing: 0.02em;
-  margin-top: 20px;
-  max-width: 30em;
 }
-
-.home-cta {
+.plate-spec {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
   display: flex;
-  align-items: center;
-  gap: 14px;
+  flex-direction: column;
+  gap: 7px;
+}
+.plate-row {
+  display: grid;
+  grid-template-columns: 5.5em 1fr;
+  gap: 12px;
+  align-items: baseline;
+  font-size: 12.5px;
+}
+.plate-row dt {
+  font-family: var(--display);
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+}
+.plate-row dd {
+  color: var(--ink-2);
+}
+.plate-ops {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  line-height: 1.8;
+}
+.home-cta {
+  margin-top: 20px;
+  display: flex;
   flex-wrap: wrap;
-  margin-top: 30px;
+  align-items: center;
+  gap: 10px 14px;
 }
 .home-start {
-  font-size: 15px;
-  padding: 14px 32px;
-  letter-spacing: 0.08em;
-  border-radius: 999px;
-  box-shadow: 0 6px 18px rgba(122, 139, 86, 0.3);
-}
-.home-start:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 9px 22px rgba(122, 139, 86, 0.36);
+  font-family: var(--display);
+  font-size: 14.5px;
+  padding: 11px 22px;
 }
 .home-start-from-zero {
   font-size: 12.5px;
-  border-radius: 999px;
-  padding: 11px 18px;
+  padding: 9px 14px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.home-start-from-zero:hover:not(:disabled) {
+  color: var(--ink);
+  background: transparent;
 }
 
-/* 進捗バー: 再訪時にどこまで進んだかを一目で示す */
-.home-progress {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 22px;
-  width: min(100%, 340px);
+.home-howto {
+  width: min(560px, 100%);
 }
-.home-progress-track {
-  flex: 1;
-  height: 4px;
-  border-radius: 999px;
-  background: rgba(31, 22, 13, 0.1);
-  overflow: hidden;
-}
-.home-progress-fill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--matcha);
-  transition: width 0.5s ease;
-}
-.home-progress-text {
-  font-family: var(--mono);
-  font-size: 11px;
+.home-howto-title {
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: 0.18em;
   color: var(--ink-3);
-  letter-spacing: 0.06em;
-  flex: none;
+  margin-bottom: 6px;
 }
-
-/* あそびかた: 影付きカードをやめ、罫線だけの一覧にして情報密度を上げる */
 .home-howto-list {
   list-style: none;
   display: flex;
   flex-direction: column;
-  margin-top: 34px;
+  margin: 0;
   padding: 0;
   border-top: 1px solid var(--line);
   width: 100%;
-  max-width: 34em;
 }
 .home-howto-list li {
   display: flex;
   align-items: baseline;
   gap: 14px;
-  padding: 13px 2px;
+  padding: 10px 2px;
   border-bottom: 1px solid var(--line);
-  font-family: var(--serif);
-  font-size: 14.5px;
+  font-family: var(--display);
+  font-size: 14px;
   color: var(--ink-2);
   line-height: 1.7;
   letter-spacing: 0.01em;
 }
+/* 手順は本当に順番があるので数字を振る。ただし 01 / 02 ではなく漢数字で、
+   札や記録帳の書きぶりに合わせる */
 .home-howto-step {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--vermilion);
-  letter-spacing: 0.08em;
+  font-family: var(--display);
+  font-size: 13px;
+  color: var(--bark);
   flex: none;
-}
-
-/* 飾りの盆栽を置く「床の間」 */
-.home-art {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  min-width: 0;
-}
-.home-art-frame {
-  position: relative;
-  aspect-ratio: 0.94; /* App.tsx の HERO_ASPECT_DESKTOP と必ず揃える */
-  border-radius: 22px;
-  border: 1px solid var(--line);
-  overflow: hidden;
-  background:
-    radial-gradient(
-      118% 86% at 50% 10%,
-      #fffdf8 0%,
-      var(--surface-soft) 52%,
-      #efe6d1 100%
-    );
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 18px 44px rgba(31, 22, 13, 0.1);
-}
-/* 和紙の目のような細い横罫 */
-.home-art-frame::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(31, 22, 13, 0.035) 0 1px,
-    transparent 1px 7px
-  );
-  pointer-events: none;
-}
-/* 盆栽を載せる床の線 */
-.home-art-frame::after {
-  content: '';
-  position: absolute;
-  left: 12%;
-  right: 12%;
-  bottom: 12.5%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(31, 22, 13, 0.16) 22%,
-    rgba(31, 22, 13, 0.16) 78%,
-    transparent
-  );
-  pointer-events: none;
-}
-.home-art-inner {
-  position: absolute;
-  inset: 5% 5% 3%;
-}
-
-.home-ops {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  list-style: none;
-  padding: 0;
-  max-width: 420px;
-  margin: 0 auto;
-  width: 100%;
-}
-.home-op {
-  font-family: var(--mono);
-  font-size: 11.5px;
-  letter-spacing: 0.03em;
+  width: 1.4em;
   text-align: center;
-  color: var(--ink-2);
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  padding: 6px 4px;
-  background: rgba(255, 255, 255, 0.55);
 }
 
 @media (max-width: 720px) {
-  .home {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 32px;
-  }
-  .home-art-frame {
+  .home-tree {
+    width: min(420px, 100%);
     aspect-ratio: 1.05;
-    max-width: 460px;
-    margin: 0 auto;
-    width: 100%;
+  }
+  .plate {
+    /* 木が小さくなるぶん、重ねる量も浅くする (gap 20px を含む) */
+    margin-top: -32px;
+  }
+  .plate-row {
+    grid-template-columns: 4.5em 1fr;
+    gap: 8px;
+  }
+  .home {
+    gap: 20px;
   }
 }
 
@@ -416,10 +334,10 @@ button {
   transform: scale(1.2);
 }
 .dot.done {
-  background: var(--matcha);
+  background: var(--moss);
 }
 .dot.current {
-  background: var(--vermilion);
+  background: var(--op-cherry);
   width: 22px;
   border-radius: 999px;
 }
@@ -450,15 +368,15 @@ button {
   color: var(--ink-3);
 }
 .meta-num {
-  color: var(--vermilion);
+  color: var(--op-cherry);
   font-weight: 700;
 }
 .meta-chapter {
   color: var(--ink-3);
 }
 .t {
-  font-family: var(--serif);
-  font-weight: 700;
+  font-family: var(--display);
+  font-weight: 600;
   font-size: 22px;
   color: var(--ink);
   letter-spacing: 0.04em;
@@ -467,7 +385,7 @@ button {
   min-height: calc(22px * 1.35 * 2);
 }
 .d {
-  font-family: var(--serif);
+  font-family: var(--display);
   font-size: 15px;
   font-weight: 400;
   color: var(--ink-2);
@@ -505,7 +423,7 @@ button {
   transition: color 0.15s;
 }
 .hint-link:hover {
-  color: var(--vermilion);
+  color: var(--op-cherry);
 }
 .hint-icon {
   display: inline-flex;
@@ -515,7 +433,7 @@ button {
   height: 18px;
   border: 1px solid currentColor;
   border-radius: 50%;
-  font-family: var(--serif);
+  font-family: var(--display);
   font-size: 11px;
   font-weight: 700;
   line-height: 1;
@@ -531,11 +449,11 @@ button {
   width: fit-content;
 }
 .mode-group-label {
-  font-family: var(--serif);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  color: var(--ink-3);
-  margin-right: 4px;
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--ink-2);
+  margin-right: 6px;
 }
 .mode-btn {
   background: transparent;
@@ -568,22 +486,22 @@ button {
   border-radius: 50%;
 }
 .mdot-merge {
-  background: var(--vermilion);
+  background: var(--op-merge);
 }
 .mdot-rebase {
-  background: var(--matcha);
+  background: var(--op-rebase);
 }
 .mdot-cherry-pick {
-  background: #d97a91;
+  background: var(--op-cherry);
 }
 .mdot-squash {
-  background: var(--gold);
+  background: var(--op-squash);
 }
 .mdot-revert {
-  background: #6b8aa8;
+  background: var(--op-revert);
 }
 .mdot-reset {
-  background: #4a3a26;
+  background: var(--op-reset);
 }
 
 /* ---------- boards ---------- */
@@ -607,8 +525,8 @@ button {
 }
 .board.cleared {
   box-shadow:
-    0 0 0 1px var(--matcha),
-    0 0 24px rgba(122, 139, 86, 0.28),
+    0 0 0 1px var(--moss),
+    0 0 24px rgba(93, 112, 82, 0.28),
     var(--shadow);
 }
 .bh {
@@ -619,7 +537,7 @@ button {
   border-bottom: 1px solid var(--line);
 }
 .lbl {
-  font-family: var(--serif);
+  font-family: var(--display);
   font-weight: 600;
   font-size: 11px;
   color: #fff;
@@ -628,10 +546,10 @@ button {
   letter-spacing: 0.1em;
 }
 .lbl.your {
-  background: var(--vermilion);
+  background: var(--bark);
 }
 .lbl.goal {
-  background: var(--matcha);
+  background: var(--moss);
 }
 .bb {
   padding: 16px;
@@ -673,9 +591,9 @@ button {
   justify-content: center;
   pointer-events: none;
   font-size: 140px;
-  color: rgba(122, 139, 86, 0.45);
-  font-family: var(--serif);
-  font-weight: 700;
+  color: rgba(93, 112, 82, 0.45);
+  font-family: var(--display);
+  font-weight: 600;
   z-index: 2;
 }
 
@@ -696,20 +614,20 @@ button {
     45deg,
     transparent 0,
     transparent 12px,
-    rgba(31, 22, 13, 0.03) 12px,
-    rgba(31, 22, 13, 0.03) 24px
+    rgba(35, 42, 43, 0.03) 12px,
+    rgba(35, 42, 43, 0.03) 24px
   );
   text-align: center;
 }
 .mask-icon {
-  font-family: var(--serif);
+  font-family: var(--display);
   font-size: 48px;
   font-weight: 700;
   color: var(--ink-4);
   line-height: 1;
 }
 .mask-text {
-  font-family: var(--serif);
+  font-family: var(--display);
   font-size: 14px;
   color: var(--ink-2);
   letter-spacing: 0.04em;
@@ -733,8 +651,8 @@ button {
   transition: all 0.15s;
 }
 .reveal-btn:hover {
-  border-color: var(--vermilion);
-  color: var(--vermilion);
+  border-color: var(--op-cherry);
+  color: var(--op-cherry);
 }
 
 /* ---------- footer ---------- */
@@ -763,13 +681,13 @@ button {
   cursor: not-allowed;
 }
 .btn.primary {
-  background: var(--matcha);
+  background: var(--moss);
   color: #fff;
-  border-color: var(--matcha);
+  border-color: var(--moss);
 }
 .btn.primary:hover {
-  background: #94a86a;
-  border-color: #94a86a;
+  background: #6d8360;
+  border-color: #6d8360;
 }
 
 /* ---------- hint tooltip ---------- */
@@ -785,12 +703,12 @@ button {
   max-width: 320px;
   background: var(--surface);
   border: 1px solid var(--line-strong);
-  border-left: 3px solid var(--vermilion);
+  border-left: 3px solid var(--op-cherry);
   border-radius: var(--r);
   padding: 12px 16px;
   box-shadow:
-    0 12px 32px rgba(31, 22, 13, 0.16),
-    0 2px 6px rgba(31, 22, 13, 0.08);
+    0 12px 32px rgba(35, 42, 43, 0.16),
+    0 2px 6px rgba(35, 42, 43, 0.08);
   z-index: 50;
   opacity: 0;
   visibility: hidden;
@@ -808,14 +726,14 @@ button {
 }
 .hint-tooltip strong {
   display: block;
-  font-family: var(--serif);
+  font-family: var(--display);
   font-size: 11px;
-  color: var(--vermilion);
+  color: var(--op-cherry);
   letter-spacing: 0.18em;
   margin-bottom: 6px;
 }
 .hint-tooltip p {
-  font-family: var(--serif);
+  font-family: var(--display);
   font-size: 13px;
   color: var(--ink);
   line-height: 1.65;
@@ -827,11 +745,11 @@ button {
   top: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--matcha);
+  background: var(--moss);
   color: #fff;
   padding: 10px 18px;
   border-radius: 999px;
-  font-family: var(--serif);
+  font-family: var(--display);
   letter-spacing: 0.06em;
   font-size: 13px;
   font-weight: 600;
@@ -865,7 +783,7 @@ button {
   max-width: 640px;
   padding: 10px 16px;
   border: 1px solid var(--line);
-  border-left: 3px solid var(--vermilion);
+  border-left: 3px solid var(--op-cherry);
   border-radius: var(--r);
   background: var(--surface);
   box-shadow: var(--shadow);
@@ -878,7 +796,7 @@ button {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--vermilion);
+  background: var(--op-cherry);
 }
 
 .cmd-line {
@@ -891,7 +809,7 @@ button {
   position: relative;
 }
 .cmd-prompt {
-  color: #9bcf8a;
+  color: var(--moss);
   font-weight: 700;
   flex: 0 0 auto;
 }
@@ -909,16 +827,16 @@ button {
   width: 100%;
   max-width: 720px;
   background: var(--surface);
-  border: 1px solid rgba(122, 139, 86, 0.4);
-  border-left: 3px solid var(--matcha);
+  border: 1px solid rgba(93, 112, 82, 0.4);
+  border-left: 3px solid var(--moss);
   border-radius: var(--r);
   padding: 14px 18px 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   box-shadow:
-    0 1px 2px rgba(31, 22, 13, 0.04),
-    0 8px 24px rgba(122, 139, 86, 0.12);
+    0 1px 2px rgba(35, 42, 43, 0.04),
+    0 8px 24px rgba(93, 112, 82, 0.12);
 }
 .solved-head {
   display: flex;
@@ -926,12 +844,12 @@ button {
   gap: 10px;
 }
 .solved-badge {
-  font-family: var(--serif);
-  font-weight: 700;
+  font-family: var(--display);
+  font-weight: 600;
   font-size: 11px;
   letter-spacing: 0.18em;
   color: #fff;
-  background: var(--matcha);
+  background: var(--moss);
   padding: 3px 10px;
   border-radius: 3px;
   flex: 0 0 auto;
@@ -960,7 +878,7 @@ button {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--matcha);
+  background: var(--moss);
   color: #fff;
   font-family: var(--mono);
   font-size: 10px;
@@ -986,7 +904,7 @@ button {
   overflow: hidden;
 }
 .solved-cmd .cmd-prompt {
-  color: var(--matcha);
+  color: var(--moss);
   font-weight: 700;
   flex: 0 0 auto;
 }
@@ -998,7 +916,7 @@ button {
   text-overflow: ellipsis;
 }
 .solved-lesson {
-  font-family: var(--serif);
+  font-family: var(--display);
   font-size: 13.5px;
   line-height: 1.7;
   color: var(--ink-2);
@@ -1006,7 +924,7 @@ button {
   margin: 0;
 }
 .solved-badge.final {
-  background: linear-gradient(135deg, var(--gold), var(--vermilion));
+  background: linear-gradient(135deg, var(--op-squash), var(--op-cherry));
   letter-spacing: 0.22em;
   padding: 4px 14px;
   font-size: 12px;
@@ -1017,34 +935,6 @@ button {
   line-height: 1.85;
 }
 
-.home-allcleared {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: linear-gradient(135deg, rgba(164, 123, 53, 0.12), rgba(196, 74, 58, 0.1));
-  border: 1px solid rgba(164, 123, 53, 0.3);
-  border-radius: var(--r);
-  padding: 12px 16px;
-  width: fit-content;
-}
-.home-allcleared-badge {
-  font-family: var(--serif);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  color: #fff;
-  background: linear-gradient(135deg, var(--gold), var(--vermilion));
-  padding: 4px 12px;
-  border-radius: 3px;
-  flex: 0 0 auto;
-}
-.home-allcleared-text {
-  font-family: var(--serif);
-  font-size: 13px;
-  color: var(--ink-2);
-  letter-spacing: 0.02em;
-  margin: 0;
-}
 
 /* ---------- responsive ---------- */
 @media (max-width: 720px) {
@@ -1084,10 +974,6 @@ button {
   .title-en {
     font-size: 10px;
   }
-  .overall-value {
-    font-size: 16px;
-  }
-
   /* prompt — フォント縮小に合わせて min-height も再計算 */
   .t {
     font-size: 18px;

@@ -64,7 +64,7 @@ const MODE_GROUPS: ReadonlyArray<{
   { label: '巻き戻す', modes: ['revert', 'reset'] },
 ];
 
-// ホームの飾り盆栽を入れる額の縦横比。styles.css の .home-art-frame と必ず揃える。
+// ホームの飾り盆栽の縦横比。styles.css の .home-tree の aspect-ratio と必ず揃える。
 // isMobile と同じ 720px を境に、縦長 → 横長へ切り替える。
 const HERO_ASPECT_DESKTOP = 0.94;
 const HERO_ASPECT_MOBILE = 1.05;
@@ -377,7 +377,7 @@ export default function App(): React.ReactElement {
             >
               <path
                 d="M 18 26 Q 42 8 78 14 Q 116 20 154 6"
-                stroke="#7a5e3a"
+                stroke="#7d5740"
                 strokeWidth={1.1}
                 fill="none"
                 strokeLinecap="round"
@@ -385,7 +385,7 @@ export default function App(): React.ReactElement {
               />
               <path
                 d="M 78 14 Q 84 6 92 3"
-                stroke="#7a5e3a"
+                stroke="#7d5740"
                 strokeWidth={0.8}
                 fill="none"
                 strokeLinecap="round"
@@ -393,66 +393,66 @@ export default function App(): React.ReactElement {
               />
               <path
                 d="M 120 17 Q 126 11 134 9"
-                stroke="#7a5e3a"
+                stroke="#7d5740"
                 strokeWidth={0.8}
                 fill="none"
                 strokeLinecap="round"
                 opacity={0.7}
               />
-              <circle cx="42" cy="14" r="2.6" fill="#7a8b56" />
-              <circle cx="78" cy="14" r="2.2" fill="#a47b35" />
-              <circle cx="92" cy="3" r="1.9" fill="#7a8b56" />
-              <circle cx="120" cy="17" r="2.2" fill="#c44a3a" />
-              <circle cx="134" cy="9" r="1.9" fill="#a47b35" />
-              <circle cx="154" cy="6" r="2.4" fill="#7a8b56" />
+              <circle cx="42" cy="14" r="2.6" fill="#6d8763" />
+              <circle cx="78" cy="14" r="2.2" fill="#ab8b4b" />
+              <circle cx="92" cy="3" r="1.9" fill="#6d8763" />
+              <circle cx="120" cy="17" r="2.2" fill="#9c4b58" />
+              <circle cx="134" cy="9" r="1.9" fill="#ab8b4b" />
+              <circle cx="154" cy="6" r="2.4" fill="#6d8763" />
             </svg>
             <span className="logo-text">盆栽ブランチ</span>
-            <svg
-              className="logo-pot"
-              viewBox="0 0 28 12"
-              aria-hidden="true"
-            >
-              <ellipse cx="14" cy="10" rx="12" ry="1.4" fill="rgba(31,22,13,0.22)" />
-              <path
-                d="M 2 2 L 26 2 L 22 9 Q 22 10.5 20 10.5 L 8 10.5 Q 6 10.5 6 9 Z"
-                fill="#5b3a25"
-              />
-              <ellipse cx="14" cy="2" rx="12" ry="1.2" fill="#3a2417" />
-            </svg>
           </button>
           <span className="title-en">bonsai branch</span>
         </h1>
-        <div className="overall">
-          <span className="overall-label">クリア</span>
-          <span className="overall-value">{cleared.size}</span>
-          <span className="overall-of">/ {stages.length}</span>
-        </div>
       </header>
 
       {view === 'home' ? (
         <section className="home">
-          <div className="home-copy">
-            {isAllCleared && (
-              <div className="home-allcleared">
-                <span className="home-allcleared-badge">全クリア</span>
-                <p className="home-allcleared-text">
-                  {stages.length} 問ぜんぶ制覇しました
-                </p>
-              </div>
-            )}
-            <p className="home-kicker">
-              <span className="home-kicker-mark" aria-hidden="true" />
-              ドラッグでおぼえる git・全 {stages.length} 問
-            </p>
-            <h2 className="home-tagline">
-              盆栽を育てる気分で、
-              <br />
-              git に慣れる
-            </h2>
-            <p className="home-desc">
+          <div className="home-tree" aria-hidden="true">
+            <Bonsai
+              state={heroState}
+              containerAspect={
+                isMobile ? HERO_ASPECT_MOBILE : HERO_ASPECT_DESKTOP
+              }
+              isMobile={isMobile}
+              bare
+            />
+          </div>
+
+          {/* 盆栽展では木の手前に札が置かれ、銘と樹種と樹歴が書かれている。
+              このアプリの素性もその型で出す */}
+          <div className="plate">
+            <p className="plate-name">盆栽を育てる気分で、git に慣れる</p>
+            <p className="plate-desc">
               PR を取り込む、こじれたブランチを整える、間違いを巻き戻す——
               現場でよくある git のシーンを、コマンドを打たずに手で覚える。
             </p>
+            <dl className="plate-spec">
+              <div className="plate-row">
+                <dt>お題</dt>
+                <dd>{stages.length} 問</dd>
+              </div>
+              <div className="plate-row">
+                <dt>扱う操作</dt>
+                <dd className="plate-ops">{HOME_OPS.join('・')}</dd>
+              </div>
+              <div className="plate-row">
+                <dt>樹歴</dt>
+                <dd>
+                  {isAllCleared
+                    ? `${stages.length} 問すべて制覇`
+                    : cleared.size > 0
+                      ? `${cleared.size} 問まで`
+                      : 'まだ手をつけていない'}
+                </dd>
+              </div>
+            </dl>
             <div className="home-cta">
               <button
                 type="button"
@@ -472,68 +472,28 @@ export default function App(): React.ReactElement {
                     setView('play');
                   }}
                 >
-                  #01 から見直す
+                  はじめから見直す
                 </button>
               )}
             </div>
-            {cleared.size > 0 && (
-              <div className="home-progress">
-                <div
-                  className="home-progress-track"
-                  role="progressbar"
-                  aria-valuenow={cleared.size}
-                  aria-valuemin={0}
-                  aria-valuemax={stages.length}
-                  aria-label="クリア状況"
-                >
-                  <span
-                    className="home-progress-fill"
-                    style={{
-                      width: `${(cleared.size / stages.length) * 100}%`,
-                    }}
-                  />
-                </div>
-                <span className="home-progress-text">
-                  {cleared.size} / {stages.length} クリア
-                </span>
-              </div>
-            )}
+          </div>
+
+          <div className="home-howto">
+            <p className="home-howto-title">あそびかた</p>
             <ol className="home-howto-list">
               <li>
-                <span className="home-howto-step">01</span>
+                <span className="home-howto-step">一</span>
                 お題を読んで、合いそうな操作を選ぶ
               </li>
               <li>
-                <span className="home-howto-step">02</span>
+                <span className="home-howto-step">二</span>
                 枝の先（HEAD）をつかんで、別の枝の先にドラッグ
               </li>
               <li>
-                <span className="home-howto-step">03</span>
+                <span className="home-howto-step">三</span>
                 見本と同じ形になればクリア
               </li>
             </ol>
-          </div>
-
-          <div className="home-art">
-            <div className="home-art-frame">
-              <div className="home-art-inner" aria-hidden="true">
-                <Bonsai
-                  state={heroState}
-                  containerAspect={
-                    isMobile ? HERO_ASPECT_MOBILE : HERO_ASPECT_DESKTOP
-                  }
-                  isMobile={isMobile}
-                  bare
-                />
-              </div>
-            </div>
-            <ul className="home-ops" aria-label="この 20 問で扱う操作">
-              {HOME_OPS.map((op) => (
-                <li key={op} className="home-op">
-                  {op}
-                </li>
-              ))}
-            </ul>
           </div>
         </section>
       ) : (
