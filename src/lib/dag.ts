@@ -21,15 +21,6 @@ function fail(state: BonsaiState, reason?: string): MergeResult {
   return { state, command: '', newCommitId: null, ok: false, reason };
 }
 
-export function stepsRemaining(
-  current: BonsaiState,
-  target: BonsaiState,
-): number {
-  const diff =
-    Object.keys(target.commits).length - Object.keys(current.commits).length;
-  return Math.max(0, diff);
-}
-
 export function mergeBranches(
   state: BonsaiState,
   sourceBranchId: string,

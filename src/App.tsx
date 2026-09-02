@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bonsai } from './components/Bonsai';
 import { stages } from './stages';
 import { heroState } from './heroState';
+import { bloomCountFor } from './lib/progress';
 import {
   cherryPickBranch,
   matchesTarget,
@@ -149,6 +150,8 @@ export default function App(): React.ReactElement {
   const [activeBranch, setActiveBranch] = useState<string | null>(null);
   // ドラッグせずに遊ぶときの「いま選んである枝」
   const [picked, setPicked] = useState<string | null>(null);
+  // 画面外の分岐ボタンにフォーカスがある枝。盤面の節にリングを出す
+  const [focusedBranch, setFocusedBranch] = useState<string | null>(null);
   const [hintOpen, setHintOpen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(() =>
     typeof window !== 'undefined'
@@ -179,12 +182,15 @@ export default function App(): React.ReactElement {
   const isAllCleared = cleared.size === stages.length;
   // ホームの飾り木は、解いた数だけ根元から花が咲く。全問解くと満開になる。
   // 木の形そのものは変えない（枝を足すと viewBox の縦横比が動いて余白が出る）
-  const heroBloomCount = useMemo(() => {
-    const nodes = Object.keys(heroState.commits).length;
-    if (cleared.size === 0) return 0;
-    if (cleared.size >= stages.length) return nodes;
-    return Math.max(1, Math.round((cleared.size / stages.length) * nodes));
-  }, [cleared.size]);
+  const heroBloomCount = useMemo(
+    () =>
+      bloomCountFor(
+        cleared.size,
+        stages.length,
+        Object.keys(heroState.commits).length,
+      ),
+    [cleared.size],
+  );
   // gotoStage が maxUnlockedIndex より先へ行かせないので、ステージは順番にしか
   // 進めない。つまり最終ステージを解いた時点で全問クリアが確定している。
   // ここで isAllCleared を見ると、cleared に加える useEffect が走るまで false の
@@ -213,6 +219,7 @@ export default function App(): React.ReactElement {
     setHintOpen(false);
     setOpError(null);
     setPicked(null);
+    setFocusedBranch(null);
   }, [stage]);
 
   // モバイルでタップ操作するため、外側クリック / Escape で閉じる
@@ -687,6 +694,26 @@ export default function App(): React.ReactElement {
             <header className="bh">
               <span className="lbl your">いま</span>
             </header>
+            {/* キーボードと支援技術の入口。SVG 内の図形に role を持たせても
+                環境によって読まれないため、本物のボタンをここに置く。
+                見た目は隠すが、フォーカス中の枝は盤面の節にリングで示す */}
+            <div className="sr-only">
+              {state.branchOrder.map((bid) => (
+                <button
+                  key={`pick-${bid}`}
+                  type="button"
+                  disabled={isCleared}
+                  aria-pressed={picked === bid}
+                  onClick={() => handlePick(bid)}
+                  onFocus={() => setFocusedBranch(bid)}
+                  onBlur={() => setFocusedBranch(null)}
+                >
+                  {picked === bid
+                    ? `${state.branches[bid]?.name} の先端（選択中。相手の枝を選ぶと操作します）`
+                    : `${state.branches[bid]?.name} の先端を選ぶ`}
+                </button>
+              ))}
+            </div>
             <div className="bb">
               <div className="bb-inner" ref={yourBoxRef}>
                 <Bonsai
@@ -695,6 +722,7 @@ export default function App(): React.ReactElement {
                   recentMergeId={recentCommitId}
                   invalidDropBranchIds={invalidDropBranchIds}
                   pickedBranchId={picked}
+                  focusedBranchId={focusedBranch}
                   onPick={handlePick}
                   containerAspect={yourAspect}
                   bloomAll={isCleared}
