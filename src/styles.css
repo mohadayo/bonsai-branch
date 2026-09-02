@@ -780,6 +780,26 @@ button {
   color: var(--ink);
   line-height: 1.65;
 }
+/* 一段目 (考え方) から、求めた人にだけ二段目 (操作) を見せる */
+.hint-more {
+  margin-top: 8px;
+  font-family: var(--display);
+  font-size: 12px;
+  color: var(--ink-2);
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.hint-more:hover {
+  color: var(--ink);
+}
+.hint-move {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
 
 /* ---------- banner ---------- */
 .banner {

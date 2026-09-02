@@ -42,6 +42,8 @@ const s01: Stage = {
     'チームリード：「feature の PR、approve したから develop にマージしといて」',
   lesson:
     'develop に明示的なマージコミットが残ることで「ここで feature を取り込んだ」という履歴が後から追えます。一番基本の取り込みパターンです。',
+  idea:
+    '取り込んだ記録を履歴に残したい場面。枝分かれを消さずに 2 本を合流させる、いちばん基本の操作はどれ？',
   hint: 'feature 先端を develop 先端に重ねる（merge）',
   initial: buildState(
     ['develop', 'feature'],
@@ -80,6 +82,8 @@ const s02: Stage = {
     '上司：「feat/cart と fix/header、どっちも approve 済みだから 2 本まとめて develop に取り込んで」',
   lesson:
     '独立した PR の取り込み順は結果に影響しません。マージコミットが 2 つできて develop の歴史が枝分かれを保ったまま統合されます。',
+  idea:
+    '独立した PR が 2 本あるだけで、やることは基本の取り込みの繰り返し。順番で結果が変わるかも考えてみて。',
   hint: '緑の節を develop に → もう一本も develop に。順序は問いません。',
   initial: buildState(
     ['develop', 'feat/cart', 'fix/header'],
@@ -121,6 +125,8 @@ const s03: Stage = {
     'リード：「feature 作ってる間に develop だいぶ進んだけど、そのまま feature を取り込んじゃって大丈夫」',
   lesson:
     '分岐元から develop が進んでいても merge は問題なくできます。マージコミットが develop 最新と feature 先端の両方を親に持ち、ここで合流したことが履歴で分かります。',
+  idea:
+    '分岐したあとに develop が進んでいても、基本の取り込みはそのまま通用する。#01 と同じ考え方で大丈夫。',
   hint: 'feature 先端を、進んだ develop 先端に merge',
   initial: buildState(
     ['develop', 'feature'],
@@ -163,6 +169,8 @@ const s04: Stage = {
     'レビュアー：「develop 進んだせいでコンフリクトしてるよ。先に最新 develop で rebase しといて」',
   lesson:
     'rebase は自分のコミットを別の親の上に「移植」する操作。履歴が一直線になり、merge より前にコンフリクトをまとめて解消できます。',
+  idea:
+    'コンフリクトの根本原因は、feature の土台が古いこと。枝ごと最新の土台に積み直す操作があったはず。',
   hint: 'feature の先端を develop の先端に rebase（モードを rebase に切替）',
   initial: buildState(
     ['develop', 'feature'],
@@ -202,6 +210,8 @@ const s05: Stage = {
     '上司：「履歴は一直線にしたいから、まず develop に rebase してから merge してくれ」',
   lesson:
     'rebase で履歴を整えてから merge する「整形 merge」のフロー。マージコミットは残しつつ枝分かれを最小化し、レビューと履歴の両立を狙います。',
+  idea:
+    '「履歴は一直線に、でも取り込んだ記録は残す」。要望が 2 つあるので、操作も 2 手に分けて考える。',
   hint: '①feature を develop に rebase → ②feature を develop に merge',
   initial: buildState(
     ['develop', 'feature'],
@@ -242,6 +252,8 @@ const s06: Stage = {
     'マネージャー：「本番落ちた、hotfix できたら main にマージしてリリース。同じ修正を develop にも取り込んでね」',
   lesson:
     '緊急修正は main にマージしてリリース、同じコミットを develop にも取り込んで両系統を揃えます。1 つの hotfix コミットを 2 箇所の親として共有させるのが定石。',
+  idea:
+    '同じ修正を 2 つの系統に行き渡らせたい。1 本の hotfix を、それぞれの枝に順に取り込めばいい。',
   hint: 'hotfix 先端を main に merge → さらに hotfix 先端を develop にも merge',
   initial: buildState(
     ['main', 'develop', 'hotfix'],
@@ -283,6 +295,8 @@ const s07: Stage = {
     'シニア：「長く開発続けてる feature、develop だいぶ進んでるから最新に rebase して追従させて」',
   lesson:
     '長く独立して進んだブランチを最新 develop に追従させる定石。rebase でコミットを develop 先端に積み直すことで、PR をレビュー可能な状態に保てます。',
+  idea:
+    '離れてしまった feature を最新に追いつかせたい。履歴を散らかさず、土台ごと動かす操作で。',
   hint: 'feature を develop に rebase（履歴を一直線に）',
   initial: buildState(
     ['develop', 'feature'],
@@ -326,6 +340,8 @@ const s08: Stage = {
     'フロントリード：「feat/api 先に進めてるから、依存してる feat/ui を feat/api 先端に rebase しといて」',
   lesson:
     '依存先のブランチが進んだら、自分のブランチの根元を依存先の先端に付け替える。rebase の引数を feat/api にすると土台ごと差し替えられます。',
+  idea:
+    '積み直す先は develop とは限らない。「どの枝の先端の上に載るべきか」を依存関係から考える。',
   hint: 'feat/ui の先端を feat/api の先端に rebase',
   initial: buildState(
     ['develop', 'feat/api', 'feat/ui'],
@@ -367,6 +383,8 @@ const s09: Stage = {
     'PM：「スプリント終わるから、approve 済みの 3 つの PR ぜんぶ develop に取り込んで」',
   lesson:
     '複数 PR を 1 本ずつマージしていく基本動作。マージコミットが連鎖して、どの PR がどの順で取り込まれたかが履歴で追えます。',
+  idea:
+    'やることは #01 の繰り返し。3 本ぶん、1 本ずつ落ち着いて。',
   hint: '3 本の feature 枝を順に develop へ merge',
   initial: buildState(
     ['develop', 'feat/a', 'feat/b', 'feat/c'],
@@ -411,6 +429,8 @@ const s10: Stage = {
     'リード：「develop 進んだから、まず feat/api を develop に rebase。その後 feat/ui も新しい feat/api に rebase して」',
   lesson:
     '下位ブランチを更新してから、その上のブランチを移植する 2 段 rebase。順序を逆にすると依存先が古いままになるので、土台から順に最新化するのが鉄則です。',
+  idea:
+    '土台から順に最新化するのが鉄則。上の枝から動かすと、古い土台の上に積んでしまう。',
   hint:
     '①feat/api を develop に rebase → ②feat/ui を新しい feat/api 先端に rebase',
   initial: buildState(
@@ -455,6 +475,8 @@ const s11: Stage = {
     '上司：「長く進んだ feature は履歴残して merge、軽い fix は rebase で一直線にして」',
   lesson:
     '大きな機能は merge で文脈を残し、小さな修正は rebase で一直線に。状況に応じた使い分けが実務での本質で、プロジェクト規約に合わせて選ぶのが大事です。',
+  idea:
+    '「文脈を残したい大きな枝」と「一直線にしたい小さな枝」。それぞれにふさわしい取り込み方を選び分ける。',
   hint:
     '①feature を develop に merge（履歴を残す） → ②fix を merge した develop の先端に rebase',
   initial: buildState(
@@ -498,6 +520,8 @@ const s12: Stage = {
     'マネージャー：「main に当てた hotfix、develop にもピンポイントで持ってきて」',
   lesson:
     'cherry-pick は特定の 1 コミットだけを別ブランチにコピーする操作。merge と違って他の変更は持ち込まれず、緊急修正の横展開で重宝します。',
+  idea:
+    '枝ごと merge すると余計な変更まで付いてくる。欲しいのは 1 コミットだけ——それ専用の操作がある。',
   hint: 'main の HEAD を develop に cherry-pick',
   initial: buildState(
     ['main', 'develop'],
@@ -536,6 +560,8 @@ const s13: Stage = {
     'リード：「あの修正だけ自分のブランチに欲しい。隣の experiment ブランチからピンポイントで取ってきて」',
   lesson:
     '「ブランチ全体は要らないけど、この 1 コミットだけ欲しい」場面で cherry-pick が活きます。差分を一直線に積むのでレビューもしやすい。',
+  idea:
+    'experiment 全体は要らない。「この 1 コミットだけ」を自分の枝に写し取る操作を思い出して。',
   hint: 'experiment の HEAD を feature に cherry-pick',
   initial: buildState(
     ['develop', 'feature', 'experiment'],
@@ -576,6 +602,8 @@ const s14: Stage = {
     'CTO：「本番落ちた、hotfix を main にも develop にも、それぞれの先端に cherry-pick で当てて」',
   lesson:
     'merge コミットを増やしたくない時、hotfix を 2 系統に cherry-pick で配ることで、各ブランチの履歴を一直線に保ちつつ修正を行き渡らせられます。',
+  idea:
+    '#12 の応用。同じコミットを 2 つの先端にそれぞれ写せば、どちらの履歴も一直線のまま揃う。',
   hint: 'hotfix を main へ cherry-pick → さらに develop へも cherry-pick',
   initial: buildState(
     ['main', 'develop', 'hotfix'],
@@ -615,6 +643,8 @@ const s15: Stage = {
     'リード：「ローカルの develop に間違って WIP を merge しちゃった。push する前に取り消して main の状態に戻して」',
   lesson:
     'reset --hard はブランチの先端を別の場所に付け替えて、進んでいたコミットを切り捨てる強力な巻き戻し。push 前のローカルでのみ安全に使えます。',
+  idea:
+    'push 前のローカルなら、間違いは「なかったこと」にできる。枝の先端を正しい場所へ付け替え直す。',
   hint: 'develop の HEAD を main の HEAD に reset',
   initial: buildState(
     ['main', 'develop'],
@@ -648,6 +678,8 @@ const s16: Stage = {
     'シニア：「feature の今の作業ぜんぶ要らないから、develop の最新先端まで戻していいよ」',
   lesson:
     'feature の作業をすべて捨てて develop と同じ状態から再スタートしたい時の reset。コミットは到達不能になるので、必要なら事前にバックアップしておくこと。',
+  idea:
+    '作業を丸ごと捨てて仕切り直したい。feature の先端をどこに揃えれば再スタートになる？',
   hint: 'feature の HEAD を develop の HEAD に reset',
   initial: buildState(
     ['develop', 'feature'],
@@ -683,6 +715,8 @@ const s17: Stage = {
     'マネージャー：「main にマージした feature、ユーザー影響でた。push 済みだから revert で履歴残して取り消して」',
   lesson:
     'push 済みのコミットを reset で消すと共有履歴が壊れます。revert は「打ち消すコミット」を新規追加するので、履歴を残したまま安全に取り消せる正攻法。',
+  idea:
+    'push 済みの履歴は書き換えられない。「消す」のではなく「打ち消した記録を足す」のが正攻法。',
   hint: 'feature の HEAD を main の HEAD に revert',
   initial: buildState(
     ['main', 'feature'],
@@ -719,6 +753,8 @@ const s18: Stage = {
     'PM：「リリース直前で feature ちょっと不安。main に履歴残しつつ一旦無効化したい」',
   lesson:
     'revert で打ち消しコミットを作るとリリース対象から外せます。後で問題が解消したら、その revert をさらに revert すれば再復活できる柔軟さが利点。',
+  idea:
+    '一旦無効化したいが、あとで戻すかもしれない。取り消し自体が履歴に残る操作なら復活も効く。',
   hint: 'feature の HEAD を main の HEAD に revert',
   initial: buildState(
     ['main', 'feature'],
@@ -757,6 +793,8 @@ const s19: Stage = {
     '上司：「feature のコミット細かすぎ。1 コミットにまとめて develop に取り込んで」',
   lesson:
     'squash merge は PR の複数コミットを 1 個に潰して取り込む方法。「fix typo」「rename」みたいな細かい履歴を本流に残したくない時の定番。',
+  idea:
+    '細かいコミットを本流に持ち込みたくない。ひとつに潰しながら取り込む方法があったはず。',
   hint: 'feature の HEAD を develop の HEAD に squash',
   initial: buildState(
     ['develop', 'feature'],
@@ -795,6 +833,8 @@ const s20: Stage = {
     'リリース担当：「機能完成したからリリースしたい。途中の試行錯誤コミットは要らないから 1 個にまとめて main に入れて」',
   lesson:
     'main 向けは履歴を綺麗に保ちたい場面が多いです。squash で開発の試行錯誤を 1 コミットに集約してから取り込むと、リリースノートが書きやすくなります。',
+  idea:
+    'main の履歴は綺麗に保ちたい場面。試行錯誤を 1 コミットに集約してから取り込む。',
   hint: 'feature の HEAD を main の HEAD に squash',
   initial: buildState(
     ['main', 'feature'],

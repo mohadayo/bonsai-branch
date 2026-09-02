@@ -24,6 +24,9 @@ export interface Stage {
   readonly title: string;
   readonly description: string;
   readonly lesson: string;
+  /** 一段目のヒント。操作は明かさず、考え方だけを示す */
+  readonly idea: string;
+  /** 二段目のヒント。具体的な操作。idea を見ても解けない人向け */
   readonly hint: string;
   readonly initial: BonsaiState;
   readonly goal: BonsaiState;
