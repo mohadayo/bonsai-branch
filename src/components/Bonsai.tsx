@@ -102,7 +102,11 @@ function layout(
   // 枝の列が左寄りのときに木と鉢がずれて浮いて見える。
   // ただし padX (モバイルは 36) は鉢の半幅より小さいので、そのまま置くと
   // 鉢の左側が viewBox の外に出る。左右とも内側に収まる位置へ寄せる
-  const rootBranch = state.branchOrder[0];
+  // 幹は「根 (parents が空の commit) を持つ枝」。branchOrder の先頭とは限らない
+  const rootCommit = Object.values(state.commits).find(
+    (c) => c.parents.length === 0,
+  );
+  const rootBranch = rootCommit?.branch ?? state.branchOrder[0];
   const rootX =
     rootBranch !== undefined
       ? padX + (branchIndex[rootBranch] ?? 0) * COL_W + offsetX
@@ -724,12 +728,12 @@ export function Bonsai({
         }
         const lowestPos = lay.positions[lowest.id];
         if (!lowestPos) return null;
-        const branchIndex = state.branchOrder.indexOf(bid);
-        if (lowest.parents.length === 0 && branchIndex === 0) {
+        // 根を持つ枝が幹。branchOrder の何番目かは問わない
+        if (lowest.parents.length === 0) {
           return (
             <path
               key={`trunk-${bid}`}
-              d={`M ${lay.potCenterX} ${lay.potY - 6} Q ${lay.potCenterX + 10} ${(lay.potY + lowestPos.y) / 2} ${lowestPos.x} ${lowestPos.y}`}
+              d={`M ${lay.potCenterX} ${lay.potY - 6} Q ${(lay.potCenterX + lowestPos.x) / 2 + 8} ${(lay.potY + lowestPos.y) / 2} ${lowestPos.x} ${lowestPos.y}`}
               stroke={branch.color}
               strokeWidth={7}
               fill="none"
@@ -814,7 +818,10 @@ export function Bonsai({
           );
         })}
 
-      {state.branchOrder.map((bid, i) => {
+      {/* 足元の枝名。飾りの木では出さない: HEAD 旗に同じ名前が出ているうえ、
+          手前の札に隠れて読めないため */}
+      {!bare &&
+        state.branchOrder.map((bid, i) => {
         const cx = lay.padX + i * COL_W + lay.offsetX;
         return (
           <g key={`label-${bid}`}>
