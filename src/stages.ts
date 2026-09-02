@@ -1,10 +1,11 @@
 import type { BonsaiState, Stage } from './types';
 
-const COL_MAIN = '#9a6a3a';
-const COL_DEV = '#5e8c4a';
-const COL_FEAT = '#c89a3e';
-const COL_FIX = '#c44a3a';
-const COL_FEAT2 = '#7c5fa3';
+// 枝の色。幹（main）を軸に、他は伝統色でくすませて揃える
+const COL_MAIN = '#7d5740';
+const COL_DEV = '#6d8763';
+const COL_FEAT = '#ab8b4b';
+const COL_FIX = '#9c4b58';
+const COL_FEAT2 = '#7a6f80';
 
 function commit(
   id: string,
