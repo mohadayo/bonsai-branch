@@ -360,6 +360,23 @@ export default function App(): React.ReactElement {
     setStageIndex(idx);
   }
 
+  // ステージを解いていない状態から始める。stageIndex が変わらないときは
+  // [stage] の useEffect が走らないので、盤面はここで初期化する
+  function startFresh(idx: number): void {
+    const next = stages[idx];
+    if (!next) return;
+    setStageIndex(idx);
+    setState(next.initial);
+    setHistory([]);
+    setRecentCommitId(null);
+    setCommandLog([]);
+    setGoalRevealed(false);
+    setMode('merge');
+    setHintOpen(false);
+    setOpError(null);
+    setView('play');
+  }
+
   return (
     <motion.div
       className="app"
@@ -463,16 +480,25 @@ export default function App(): React.ReactElement {
             <div className="home-cta">
               {/* 全部終わっている人に「続きから」は出さない。続きが無いので */}
               {isAllCleared ? (
-                <button
-                  type="button"
-                  className="btn primary home-start"
-                  onClick={() => {
-                    setStageIndex(0);
-                    setView('play');
-                  }}
-                >
-                  もう一度あそぶ　#01
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="btn primary home-start"
+                    onClick={() => startFresh(0)}
+                  >
+                    もう一度あそぶ　#01
+                  </button>
+                  {/* 解き直している途中で戻ってきた人が、その問題に帰れるように */}
+                  {stageIndex !== 0 && (
+                    <button
+                      type="button"
+                      className="btn home-start-from-zero"
+                      onClick={() => setView('play')}
+                    >
+                      #{String(stageIndex + 1).padStart(2, '0')} を開く
+                    </button>
+                  )}
+                </>
               ) : (
                 <>
                   <button
@@ -488,10 +514,7 @@ export default function App(): React.ReactElement {
                     <button
                       type="button"
                       className="btn home-start-from-zero"
-                      onClick={() => {
-                        setStageIndex(0);
-                        setView('play');
-                      }}
+                      onClick={() => startFresh(0)}
                     >
                       はじめから見直す
                     </button>
@@ -783,9 +806,10 @@ export default function App(): React.ReactElement {
             次へ →
           </button>
         )}
-        {/* 解き終えた問題を開いているときは、ここからホームに戻れないと
-            ロゴを押すしか手が無くなる。全クリアの回だけは主役として出す */}
-        {(isFinalClear || cleared.has(stage.id)) && (
+        {/* 解き終えた問題を開き直しているときは、ここからホームに戻れないと
+            ロゴを押すしか手が無くなる。全クリアの回だけは主役として出す。
+            初めて解いた直後は「次へ」が主役なので、並べて出さない */}
+        {(isFinalClear || (cleared.has(stage.id) && !isCleared)) && (
           <button
             className={`btn ${isFinalClear ? 'primary' : ''}`}
             onClick={() => setView('home')}
