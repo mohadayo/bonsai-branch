@@ -811,6 +811,31 @@ button {
   font-size: 13px;
   line-height: 1.65;
 }
+/* 枝を選んだあと、相手を選ぶまでの案内。誤操作の一言と同じ場所に出す */
+.pick-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 640px;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--moss);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.pick-hint-name {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1px 7px;
+}
 .op-error-mark {
   flex: none;
   width: 6px;
