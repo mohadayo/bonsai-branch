@@ -370,6 +370,7 @@ interface CommitVisualProps {
   showMessage: boolean;
   idScope: string;
   isPicked?: boolean;
+  isFocused?: boolean;
 }
 
 function CommitVisual({
@@ -380,6 +381,7 @@ function CommitVisual({
   showMessage,
   idScope,
   isPicked = false,
+  isFocused = false,
 }: CommitVisualProps): ReactElement {
   const isMerge = commit.parents.length > 1;
   const hash = hashOf(commit.id);
@@ -434,6 +436,16 @@ function CommitVisual({
         stroke={isMerge ? '#fff5e8' : '#1a1208'}
         strokeWidth={isMerge ? 1.6 : 1.2}
       />
+      {/* キーボードでフォーカスしている節。フォーカス自体は画面外の
+          ボタンにあるので、現在地はここで見せる */}
+      {isFocused && (
+        <circle
+          r={NODE_R + 11}
+          fill="none"
+          stroke="#2f5266"
+          strokeWidth={2}
+        />
+      )}
       {/* 選んである節。次に選んだ枝との間で操作が起きる */}
       {isPicked && (
         <circle
@@ -487,8 +499,8 @@ interface CommitDotProps {
   showMessage: boolean;
   idScope: string;
   isPicked?: boolean;
+  isFocused?: boolean;
   onPick?: (branchId: string) => void;
-  branchName?: string;
 }
 
 function StaticCommitDot({
@@ -521,21 +533,29 @@ function DraggableCommitDot({
   showMessage,
   idScope,
   isPicked = false,
+  isFocused = false,
   onPick,
-  branchName,
 }: Omit<CommitDotProps, 'draggable'>): ReactElement {
-  const { setNodeRef, listeners, attributes, transform, isDragging } =
-    useDraggable({
-      id: `tip-${commit.branch}`,
-    });
+  const { setNodeRef, listeners, transform, isDragging } = useDraggable({
+    id: `tip-${commit.branch}`,
+  });
   const dx = transform?.x ?? 0;
   const dy = transform?.y ?? 0;
 
   // ドラッグの直後にブラウザが click を続けて出すことがある。そのまま拾うと
-  // 落とした先の枝が選ばれたまま残るので、1 回だけ食べる
+  // 落とした先の枝が選ばれたまま残るので食べる。ただし残しっぱなしにすると、
+  // 盤面の外で離した (click が来ない) あとの正当なクリックまで 1 回無視して
+  // しまうため、ドラッグ終了からごく短い間だけ有効にする
   const justDragged = useRef(false);
   useEffect(() => {
-    if (isDragging) justDragged.current = true;
+    if (isDragging) {
+      justDragged.current = true;
+      return;
+    }
+    const t = window.setTimeout(() => {
+      justDragged.current = false;
+    }, 250);
+    return () => window.clearTimeout(t);
   }, [isDragging]);
 
   return (
@@ -547,9 +567,10 @@ function DraggableCommitDot({
         touchAction: 'none',
       }}
       {...listeners}
-      {...attributes}
-      // ドラッグしなくても、選ぶ → 相手を選ぶ の 2 手で同じことができる。
-      // PointerSensor は 4px 動くまでドラッグにしないので click はここに届く
+      // ここはポインタ専用。キーボードと支援技術は盤面の外にある
+      // 本物の <button> (App 側の分岐ボタン) から同じ onPick に入る。
+      // SVG 内の g に role や tabindex を持たせても、支援技術に届くかは
+      // 環境依存だったため、入口を HTML に一本化した
       onClick={() => {
         if (justDragged.current) {
           justDragged.current = false;
@@ -557,19 +578,7 @@ function DraggableCommitDot({
         }
         onPick?.(commit.branch);
       }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onPick?.(commit.branch);
-        }
-      }}
-      aria-roledescription={undefined}
-      aria-pressed={isPicked}
-      aria-label={
-        branchName
-          ? `${branchName} の先端${isPicked ? '（選択中）' : ''}`
-          : undefined
-      }
+      aria-hidden="true"
     >
       <CommitVisual
         commit={commit}
@@ -579,6 +588,7 @@ function DraggableCommitDot({
         showMessage={showMessage}
         idScope={idScope}
         isPicked={isPicked}
+        isFocused={isFocused}
       />
     </g>
   );
@@ -694,6 +704,7 @@ export function Bonsai({
   recentMergeId = null,
   invalidDropBranchIds,
   pickedBranchId = null,
+  focusedBranchId = null,
   onPick,
   containerAspect = null,
   bloomAll = false,
@@ -708,6 +719,8 @@ export function Bonsai({
   invalidDropBranchIds?: ReadonlySet<string>;
   /** 選んである枝。次に別の枝を選ぶと操作が起きる（ドラッグの代わり） */
   pickedBranchId?: string | null;
+  /** 画面外の分岐ボタンにフォーカスがある枝。節にリングを出して現在地を見せる */
+  focusedBranchId?: string | null;
   onPick?: (branchId: string) => void;
   containerAspect?: number | null;
   bloomAll?: boolean;
@@ -735,8 +748,8 @@ export function Bonsai({
       viewBox={`0 0 ${lay.width} ${lay.height}`}
       preserveAspectRatio="xMidYMid meet"
       style={{ display: 'block', width: '100%', height: '100%' }}
-      role="img"
-      aria-label="盆栽"
+      role={interactive ? 'group' : 'img'}
+      aria-label={interactive ? '盆栽の盤面。枝の先を選んで操作する' : '盆栽'}
     >
       <defs>
         <radialGradient id={paperId} cx="50%" cy="32%" r="82%">
@@ -842,8 +855,8 @@ export function Bonsai({
                 showMessage={interactive}
                 idScope={idScope}
                 isPicked={pickedBranchId === c.branch}
+                isFocused={focusedBranchId === c.branch}
                 onPick={onPick}
-                branchName={branch?.name}
               />
             </motion.g>
           );

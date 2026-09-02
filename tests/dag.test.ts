@@ -11,7 +11,6 @@ import {
   resetBranch,
   revertBranch,
   squashMergeBranches,
-  stepsRemaining,
 } from '../src/lib/dag';
 import type { BonsaiState } from '../src/types';
 
@@ -141,21 +140,6 @@ describe('rebaseBranch', () => {
     );
     // feat は既に main 上 → no-op
     expect(rebaseBranch(st, 'feat', 'main').ok).toBe(false);
-  });
-});
-
-describe('stepsRemaining', () => {
-  it('returns commit count diff', () => {
-    const a = s([{ id: 'm', head: 'c1' }], [{ id: 'c1', parents: [], branch: 'm' }]);
-    const b = s(
-      [{ id: 'm', head: 'c2' }],
-      [
-        { id: 'c1', parents: [], branch: 'm' },
-        { id: 'c2', parents: ['c1'], branch: 'm' },
-      ],
-    );
-    expect(stepsRemaining(a, b)).toBe(1);
-    expect(stepsRemaining(b, a)).toBe(0);
   });
 });
 
