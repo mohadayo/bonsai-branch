@@ -147,6 +147,8 @@ export default function App(): React.ReactElement {
   const [yourAspect, setYourAspect] = useState<number | null>(null);
   const [goalAspect, setGoalAspect] = useState<number | null>(null);
   const [activeBranch, setActiveBranch] = useState<string | null>(null);
+  // ドラッグせずに遊ぶときの「いま選んである枝」
+  const [picked, setPicked] = useState<string | null>(null);
   const [hintOpen, setHintOpen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(() =>
     typeof window !== 'undefined'
@@ -210,6 +212,7 @@ export default function App(): React.ReactElement {
     setMode('merge');
     setHintOpen(false);
     setOpError(null);
+    setPicked(null);
   }, [stage]);
 
   // モバイルでタップ操作するため、外側クリック / Escape で閉じる
@@ -295,6 +298,10 @@ export default function App(): React.ReactElement {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement) return;
       if (e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === 'Escape') {
+        setPicked(null);
+        return;
+      }
       if (e.key === 'r' || e.key === 'R') {
         if (e.metaKey || e.ctrlKey || e.altKey) return;
         reset();
@@ -321,16 +328,8 @@ export default function App(): React.ReactElement {
     if (m) setActiveBranch(m[1]!);
   }
 
-  function handleDragEnd(event: DragEndEvent): void {
-    setActiveBranch(null);
-    const activeId = String(event.active.id);
-    const overId = event.over?.id ? String(event.over.id) : null;
-    if (!overId) return;
-    const sourceMatch = /^tip-(.+)$/.exec(activeId);
-    const targetMatch = /^tip-(.+)-drop$/.exec(overId);
-    if (!sourceMatch || !targetMatch) return;
-    const source = sourceMatch[1]!;
-    const target = targetMatch[1]!;
+  // ドラッグでも「選ぶ → 相手を選ぶ」でも、ここに集まる
+  function applyMove(source: string, target: string): void {
     if (source === target) return;
     const result = applyOp(state, mode, source, target);
     if (!result.ok) {
@@ -344,12 +343,43 @@ export default function App(): React.ReactElement {
     setCommandLog((log) => [...log, result.command]);
   }
 
+  function handleDragEnd(event: DragEndEvent): void {
+    setActiveBranch(null);
+    const activeId = String(event.active.id);
+    const overId = event.over?.id ? String(event.over.id) : null;
+    if (!overId) return;
+    const sourceMatch = /^tip-(.+)$/.exec(activeId);
+    const targetMatch = /^tip-(.+)-drop$/.exec(overId);
+    if (!sourceMatch || !targetMatch) return;
+    setPicked(null);
+    applyMove(sourceMatch[1]!, targetMatch[1]!);
+  }
+
+  // ドラッグせずに遊ぶ経路。1 回目で枝を選び、2 回目で相手を選ぶ。
+  // キーボード（Enter / Space）でもタップでも同じ手順になる
+  function handlePick(branchId: string): void {
+    if (isCleared) return;
+    if (picked === null) {
+      setPicked(branchId);
+      setOpError(null);
+      return;
+    }
+    if (picked === branchId) {
+      setPicked(null);
+      return;
+    }
+    const source = picked;
+    setPicked(null);
+    applyMove(source, branchId);
+  }
+
   function reset(): void {
     setState(stage.initial);
     setHistory([]);
     setRecentCommitId(null);
     setCommandLog([]);
     setOpError(null);
+    setPicked(null);
   }
 
   function undo(): void {
@@ -360,6 +390,7 @@ export default function App(): React.ReactElement {
     setHistory((h) => h.slice(0, -1));
     setCommandLog((log) => log.slice(0, -1));
     setOpError(null);
+    setPicked(null);
   }
 
   function gotoStage(idx: number): void {
@@ -382,6 +413,7 @@ export default function App(): React.ReactElement {
     setMode('merge');
     setHintOpen(false);
     setOpError(null);
+    setPicked(null);
     setView('play');
   }
 
@@ -542,7 +574,8 @@ export default function App(): React.ReactElement {
               </li>
               <li>
                 <span className="home-howto-step">二</span>
-                枝の先（HEAD）をつかんで、別の枝の先にドラッグ
+                枝の先（HEAD）をつかんで、別の枝の先にドラッグ。
+                つかまずに、選ぶ → 相手を選ぶ でも同じ
               </li>
               <li>
                 <span className="home-howto-step">三</span>
@@ -661,6 +694,8 @@ export default function App(): React.ReactElement {
                   interactive
                   recentMergeId={recentCommitId}
                   invalidDropBranchIds={invalidDropBranchIds}
+                  pickedBranchId={picked}
+                  onPick={handlePick}
                   containerAspect={yourAspect}
                   bloomAll={isCleared}
                   isMobile={isMobile}
@@ -791,6 +826,20 @@ export default function App(): React.ReactElement {
             >
               <span className="op-error-mark" aria-hidden="true" />
               {opError.text}
+            </motion.div>
+          ) : picked ? (
+            <motion.div
+              key="pick-hint"
+              className="pick-hint"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              <span className="pick-hint-name">
+                {state.branches[picked]?.name}
+              </span>
+              を選びました。次に相手の枝の先を選んでください（Esc でやめる）
             </motion.div>
           ) : null}
         </AnimatePresence>

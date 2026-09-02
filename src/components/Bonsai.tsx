@@ -1,6 +1,6 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useMemo, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, type ReactElement } from 'react';
 import { computeGenerations, hashOf } from '../lib/dag';
 import type { BonsaiState, Commit } from '../types';
 
@@ -369,6 +369,7 @@ interface CommitVisualProps {
   isPulse: boolean;
   showMessage: boolean;
   idScope: string;
+  isPicked?: boolean;
 }
 
 function CommitVisual({
@@ -378,6 +379,7 @@ function CommitVisual({
   isPulse,
   showMessage,
   idScope,
+  isPicked = false,
 }: CommitVisualProps): ReactElement {
   const isMerge = commit.parents.length > 1;
   const hash = hashOf(commit.id);
@@ -432,6 +434,16 @@ function CommitVisual({
         stroke={isMerge ? '#fff5e8' : '#1a1208'}
         strokeWidth={isMerge ? 1.6 : 1.2}
       />
+      {/* 選んである節。次に選んだ枝との間で操作が起きる */}
+      {isPicked && (
+        <circle
+          r={NODE_R + 7}
+          fill="none"
+          stroke={color}
+          strokeWidth={2.4}
+          strokeDasharray="4 3"
+        />
+      )}
       {isMerge && (
         <circle
           r={3}
@@ -474,6 +486,9 @@ interface CommitDotProps {
   draggable: boolean;
   showMessage: boolean;
   idScope: string;
+  isPicked?: boolean;
+  onPick?: (branchId: string) => void;
+  branchName?: string;
 }
 
 function StaticCommitDot({
@@ -505,6 +520,9 @@ function DraggableCommitDot({
   isHead,
   showMessage,
   idScope,
+  isPicked = false,
+  onPick,
+  branchName,
 }: Omit<CommitDotProps, 'draggable'>): ReactElement {
   const { setNodeRef, listeners, attributes, transform, isDragging } =
     useDraggable({
@@ -513,16 +531,45 @@ function DraggableCommitDot({
   const dx = transform?.x ?? 0;
   const dy = transform?.y ?? 0;
 
+  // ドラッグの直後にブラウザが click を続けて出すことがある。そのまま拾うと
+  // 落とした先の枝が選ばれたまま残るので、1 回だけ食べる
+  const justDragged = useRef(false);
+  useEffect(() => {
+    if (isDragging) justDragged.current = true;
+  }, [isDragging]);
+
   return (
     <g
       ref={setNodeRef as unknown as React.Ref<SVGGElement>}
       transform={`translate(${pos.x + dx}, ${pos.y + dy})`}
       style={{
-        cursor: isDragging ? 'grabbing' : 'grab',
+        cursor: isDragging ? 'grabbing' : 'pointer',
         touchAction: 'none',
       }}
       {...listeners}
       {...attributes}
+      // ドラッグしなくても、選ぶ → 相手を選ぶ の 2 手で同じことができる。
+      // PointerSensor は 4px 動くまでドラッグにしないので click はここに届く
+      onClick={() => {
+        if (justDragged.current) {
+          justDragged.current = false;
+          return;
+        }
+        onPick?.(commit.branch);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onPick?.(commit.branch);
+        }
+      }}
+      aria-roledescription={undefined}
+      aria-pressed={isPicked}
+      aria-label={
+        branchName
+          ? `${branchName} の先端${isPicked ? '（選択中）' : ''}`
+          : undefined
+      }
     >
       <CommitVisual
         commit={commit}
@@ -531,6 +578,7 @@ function DraggableCommitDot({
         isPulse={isHead}
         showMessage={showMessage}
         idScope={idScope}
+        isPicked={isPicked}
       />
     </g>
   );
@@ -645,6 +693,8 @@ export function Bonsai({
   interactive = false,
   recentMergeId = null,
   invalidDropBranchIds,
+  pickedBranchId = null,
+  onPick,
   containerAspect = null,
   bloomAll = false,
   bloomCount = 0,
@@ -656,6 +706,9 @@ export function Bonsai({
   interactive?: boolean;
   recentMergeId?: string | null;
   invalidDropBranchIds?: ReadonlySet<string>;
+  /** 選んである枝。次に別の枝を選ぶと操作が起きる（ドラッグの代わり） */
+  pickedBranchId?: string | null;
+  onPick?: (branchId: string) => void;
   containerAspect?: number | null;
   bloomAll?: boolean;
   /** 根に近いほうから数えて、いくつの節に花を咲かせるか（ホームの飾り木で進捗を表す） */
@@ -788,6 +841,9 @@ export function Bonsai({
                 draggable={interactive && isHead && !solved}
                 showMessage={interactive}
                 idScope={idScope}
+                isPicked={pickedBranchId === c.branch}
+                onPick={onPick}
+                branchName={branch?.name}
               />
             </motion.g>
           );
