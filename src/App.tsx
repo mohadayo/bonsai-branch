@@ -8,7 +8,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { Bonsai } from './components/Bonsai';
 import { stages } from './stages';
 import { heroState } from './heroState';
@@ -135,7 +135,11 @@ export default function App(): React.ReactElement {
   const [view, setView] = useState<'home' | 'play'>('home');
 
   const stage = stages[stageIndex]!;
-  const [history, setHistory] = useState<BonsaiState[]>([]);
+  // 盤面と、その時点までのコマンド列を対で積む。リセットも一手として積むので
+  // 「一手戻す」で取り消せる（押し間違いで進行を失わせない）
+  const [history, setHistory] = useState<
+    Array<{ state: BonsaiState; commandLog: string[] }>
+  >([]);
   const [state, setState] = useState<BonsaiState>(stage.initial);
   const [recentCommitId, setRecentCommitId] = useState<string | null>(null);
   const [commandLog, setCommandLog] = useState<string[]>([]);
@@ -344,7 +348,7 @@ export default function App(): React.ReactElement {
       return;
     }
     setOpError(null);
-    setHistory((h) => [...h, state]);
+    setHistory((h) => [...h, { state, commandLog }]);
     setState(result.state);
     setRecentCommitId(result.newCommitId);
     setCommandLog((log) => [...log, result.command]);
@@ -380,9 +384,13 @@ export default function App(): React.ReactElement {
     applyMove(source, branchId);
   }
 
+  // 盤面を初期状態に戻す。history は捨てずに現在の盤面を積むので、
+  // 誤って押しても「一手戻す」で直前の盤面ごと帰ってこられる
   function reset(): void {
+    if (state !== stage.initial) {
+      setHistory((h) => [...h, { state, commandLog }]);
+    }
     setState(stage.initial);
-    setHistory([]);
     setRecentCommitId(null);
     setCommandLog([]);
     setOpError(null);
@@ -392,10 +400,10 @@ export default function App(): React.ReactElement {
   function undo(): void {
     if (history.length === 0) return;
     const prev = history[history.length - 1]!;
-    setState(prev);
+    setState(prev.state);
     setRecentCommitId(null);
     setHistory((h) => h.slice(0, -1));
-    setCommandLog((log) => log.slice(0, -1));
+    setCommandLog(prev.commandLog);
     setOpError(null);
     setPicked(null);
   }
@@ -425,6 +433,9 @@ export default function App(): React.ReactElement {
   }
 
   return (
+    // OS の「視差効果を減らす」設定を尊重する。transform 系の動きが止まり、
+    // opacity のフェードだけが残る
+    <MotionConfig reducedMotion="user">
     <motion.div
       className="app"
       initial={{ opacity: 0, y: 8 }}
@@ -867,22 +878,25 @@ export default function App(): React.ReactElement {
               <span className="pick-hint-name">
                 {state.branches[picked]?.name}
               </span>
-              を選びました。次に相手の枝の先を選んでください（Esc でやめる）
+              を選びました。次に相手の枝の先を選んでください（同じ枝を選ぶか
+              Esc でやめる）
             </motion.div>
           ) : null}
         </AnimatePresence>
       </div>
 
       <footer className="foot">
+        {/* 操作モードの reset (git reset) と紛れないよう、盤面側の 2 つは
+            git の語を避けた名前にする */}
         <button
           className="btn"
           onClick={undo}
           disabled={history.length === 0}
         >
-          戻す
+          一手戻す
         </button>
         <button className="btn" onClick={reset}>
-          リセット
+          最初から
         </button>
         {isCleared && stageIndex < stages.length - 1 && (
           <button
@@ -908,5 +922,6 @@ export default function App(): React.ReactElement {
       )}
 
     </motion.div>
+    </MotionConfig>
   );
 }
