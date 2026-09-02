@@ -46,10 +46,13 @@ button {
 .app {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 48px 24px 56px;
+  padding: 48px 24px 32px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
+  /* 盤面が残りの高さを埋めて、フッターまで 1 画面に収まるようにする。
+     入りきらない高さの画面では素直にスクロールさせる（盤面を切らない） */
+  min-height: 100vh;
 }
 
 /* ---------- header ---------- */
@@ -588,6 +591,8 @@ button {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  flex: 1;
+  min-height: 0;
 }
 .board {
   background: var(--surface);
@@ -597,6 +602,8 @@ button {
   position: relative;
   box-shadow: var(--shadow);
   transition: box-shadow 0.4s;
+  display: flex;
+  flex-direction: column;
 }
 .board.cleared {
   box-shadow:
@@ -630,7 +637,10 @@ button {
   padding: 16px;
   background: var(--surface-soft);
   position: relative;
-  min-height: 560px;
+  flex: 1;
+  /* 余りがあれば伸びる。ここはクリア表示が出て盤面が縮むときの下限で、
+     これを下回るならスクロールさせる（コミットが読めない大きさにしない） */
+  min-height: 320px;
   display: flex;
   flex-direction: column;
 }
@@ -638,11 +648,17 @@ button {
   flex: 1;
   display: flex;
   min-height: 0;
+  /* 中の svg を絶対配置で浮かせる基準。svg は height:100% を解決できないと
+     viewBox の縦横比で自前の高さを主張し、それが盤面 → .app の高さを決めてしまう */
+  position: relative;
+}
+.bb-inner > svg,
+.bb-inner > div {
+  position: absolute;
+  inset: 0;
 }
 .bb-inner > div {
-  flex: 1;
   display: flex;
-  min-height: 0;
 }
 .bb-inner svg {
   width: 100%;
@@ -842,7 +858,8 @@ button {
 
 /* ---------- command line ---------- */
 .cmd-line {
-  min-height: 40px;
+  /* クリアするまで中身が空なので、その間の高さは盤面に回す */
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1010,6 +1027,8 @@ button {
   .app {
     padding: 22px 16px 36px;
     gap: 18px;
+    /* ボードが縦に 2 枚並ぶので、1 画面に押し込めずスクロールさせる */
+    min-height: auto;
   }
   .boards {
     grid-template-columns: 1fr;
