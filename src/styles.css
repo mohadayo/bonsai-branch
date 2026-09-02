@@ -56,10 +56,10 @@ button {
 .app {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 40px 24px 28px;
+  padding: 28px 24px 28px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
   /* 盤面が残りの高さを埋めて、フッターまで 1 画面に収まるようにする。
      入りきらない高さの画面では素直にスクロールさせる（盤面を切らない） */
   min-height: 100vh;
@@ -123,9 +123,9 @@ button {
 }
 .home-tree {
   /* aspect-ratio は App.tsx の HERO_ASPECT_DESKTOP と必ず揃える。
-     ずれると svg が viewBox を収めきるために左右へ余白を作る */
-  width: min(330px, 100%);
-  aspect-ratio: 0.94;
+     ずれると svg が viewBox を伸ばし、木の周りに余白ができる */
+  width: min(440px, 100%);
+  aspect-ratio: 1.325;
   flex: none;
   display: flex;
 }
@@ -218,6 +218,8 @@ button {
 
 .home-howto {
   width: min(560px, 100%);
+  /* 直前の札が木に食い込んでいるぶん、ここは間を空けないと詰まって見える */
+  margin-top: 18px;
 }
 .home-howto-title {
   font-family: var(--display);
@@ -261,7 +263,7 @@ button {
 @media (max-width: 720px) {
   .home-tree {
     width: min(420px, 100%);
-    aspect-ratio: 1.05;
+    aspect-ratio: 1.06;
   }
   .plate {
     /* 木が小さくなるぶん、重ねる量も浅くする (gap 20px を含む) */
