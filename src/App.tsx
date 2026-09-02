@@ -121,6 +121,20 @@ function loadProgress(): StoredProgress {
 
 function saveProgress(p: StoredProgress): void {
   try {
+    // 複数タブで遊んでいても、別タブでクリアした分を上書きで消さないよう
+    // cleared は保存済みの内容と合算する（stageIndex は後勝ちでよい）
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const prev = JSON.parse(raw) as StoredProgress;
+        if (Array.isArray(prev.cleared)) {
+          p = {
+            ...p,
+            cleared: Array.from(new Set([...prev.cleared, ...p.cleared])),
+          };
+        }
+      }
+    } catch {}
     localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
   } catch {}
 }
@@ -157,6 +171,9 @@ export default function App(): React.ReactElement {
   // 画面外の分岐ボタンにフォーカスがある枝。盤面の節にリングを出す
   const [focusedBranch, setFocusedBranch] = useState<string | null>(null);
   const [hintOpen, setHintOpen] = useState<boolean>(false);
+  // ヒントは二段階。開くと考え方 (idea) だけが出て、操作 (hint) は
+  // 「操作まで見る」を押した人にだけ見せる。いきなり答えにしない
+  const [hintMoveShown, setHintMoveShown] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(() =>
     typeof window !== 'undefined'
       ? window.matchMedia('(max-width: 720px)').matches
@@ -221,6 +238,7 @@ export default function App(): React.ReactElement {
     setGoalRevealed(false);
     setMode('merge');
     setHintOpen(false);
+    setHintMoveShown(false);
     setOpError(null);
     setPicked(null);
     setFocusedBranch(null);
@@ -320,10 +338,21 @@ export default function App(): React.ReactElement {
         if (e.altKey) return;
         e.preventDefault();
         undo();
-      } else if (e.key === 'ArrowRight' && (e.metaKey || e.ctrlKey)) {
+      } else if (
+        // Cmd+←→ はブラウザの「戻る / 進む」なので奪わない。Shift で移動する
+        e.key === 'ArrowRight' &&
+        e.shiftKey &&
+        !e.metaKey &&
+        !e.ctrlKey
+      ) {
         e.preventDefault();
         gotoStage(stageIndex + 1);
-      } else if (e.key === 'ArrowLeft' && (e.metaKey || e.ctrlKey)) {
+      } else if (
+        e.key === 'ArrowLeft' &&
+        e.shiftKey &&
+        !e.metaKey &&
+        !e.ctrlKey
+      ) {
         e.preventDefault();
         gotoStage(stageIndex - 1);
       }
@@ -597,7 +626,7 @@ export default function App(): React.ReactElement {
               </li>
               <li>
                 <span className="home-howto-step">三</span>
-                見本と同じ形になればクリア
+                お題どおりの形に整えばクリア（見本は「答えを見る」でいつでも）
               </li>
             </ol>
           </div>
@@ -609,6 +638,8 @@ export default function App(): React.ReactElement {
           className="rail-btn"
           onClick={() => gotoStage(stageIndex - 1)}
           disabled={stageIndex === 0}
+          title="前の問（Shift + ←）"
+          aria-label="前の問"
         >
           ←
         </button>
@@ -633,6 +664,8 @@ export default function App(): React.ReactElement {
           disabled={
             stageIndex === stages.length - 1 || stageIndex >= maxUnlockedIndex
           }
+          title="次の問（Shift + →）"
+          aria-label="次の問"
         >
           →
         </button>
@@ -674,20 +707,26 @@ export default function App(): React.ReactElement {
             <button
               type="button"
               className="hint-link"
-              aria-describedby="hint-tooltip"
               aria-expanded={hintOpen}
               onClick={() => setHintOpen((v) => !v)}
             >
               <span className="hint-icon">?</span>
               ヒント
             </button>
-            <div
-              id="hint-tooltip"
-              role="tooltip"
-              className="hint-tooltip"
-            >
+            <div id="hint-tooltip" className="hint-tooltip">
               <strong>ヒント</strong>
-              <p>{stage.hint}</p>
+              <p>{stage.idea}</p>
+              {hintMoveShown ? (
+                <p className="hint-move">{stage.hint}</p>
+              ) : (
+                <button
+                  type="button"
+                  className="hint-more"
+                  onClick={() => setHintMoveShown(true)}
+                >
+                  操作まで見る
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -892,10 +931,11 @@ export default function App(): React.ReactElement {
           className="btn"
           onClick={undo}
           disabled={history.length === 0}
+          title="一手戻す（Z）"
         >
           一手戻す
         </button>
-        <button className="btn" onClick={reset}>
+        <button className="btn" onClick={reset} title="最初から（R）">
           最初から
         </button>
         {isCleared && stageIndex < stages.length - 1 && (

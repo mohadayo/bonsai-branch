@@ -159,6 +159,12 @@ describe('stages — initial と goal の整合性', () => {
     it(`${stage.id} - 初期状態は goal と異なる（操作の余地がある）`, () => {
       expect(matchesTarget(stage.initial, stage.goal)).toBe(false);
     });
+
+    it(`${stage.id} - ヒントは二段階（idea は hint の写しではない）`, () => {
+      expect(stage.idea.length).toBeGreaterThan(0);
+      expect(stage.hint.length).toBeGreaterThan(0);
+      expect(stage.idea).not.toBe(stage.hint);
+    });
   }
 });
 
