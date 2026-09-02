@@ -394,3 +394,122 @@ describe('squashMergeBranches', () => {
     expect(r.ok).toBe(false);
   });
 });
+
+// 成立しない操作は、UI が「なぜダメか」を出せるよう理由を返す。
+// ドラッグ元と同じ枝など、UI 上そもそも起こせない弾き方には理由を付けない。
+describe('rejection reason', () => {
+  const merged = s(
+    [
+      { id: 'develop', head: 'M' },
+      { id: 'feature', head: 'f1' },
+    ],
+    [
+      { id: 'd1', parents: [], branch: 'develop' },
+      { id: 'f1', parents: ['d1'], branch: 'feature' },
+      { id: 'M', parents: ['d1', 'f1'], branch: 'develop' },
+    ],
+  );
+
+  it('merge: already taken in', () => {
+    const r = mergeBranches(merged, 'feature', 'develop');
+    expect(r.ok).toBe(false);
+    expect(r.reason).toContain('feature');
+    expect(r.reason).toContain('develop');
+  });
+
+  it('cherry-pick: already taken in', () => {
+    const r = cherryPickBranch(merged, 'feature', 'develop');
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBeTruthy();
+  });
+
+  it('squash: nothing left to squash', () => {
+    // feature が develop の途中を指している = まとめる差分が無い
+    const st = s(
+      [
+        { id: 'develop', head: 'd2' },
+        { id: 'feature', head: 'd1' },
+      ],
+      [
+        { id: 'd1', parents: [], branch: 'develop' },
+        { id: 'd2', parents: ['d1'], branch: 'develop' },
+      ],
+    );
+    const r = squashMergeBranches(st, 'feature', 'develop');
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBeTruthy();
+  });
+
+  it('rebase: already on top of the target', () => {
+    const st = s(
+      [
+        { id: 'develop', head: 'd1' },
+        { id: 'feature', head: 'f2' },
+      ],
+      [
+        { id: 'd1', parents: [], branch: 'develop' },
+        { id: 'f1', parents: ['d1'], branch: 'feature' },
+        { id: 'f2', parents: ['f1'], branch: 'feature' },
+      ],
+    );
+    const r = rebaseBranch(st, 'feature', 'develop');
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBeTruthy();
+  });
+
+  it('revert: the commit is not taken in yet', () => {
+    const st = s(
+      [
+        { id: 'main', head: 'm1' },
+        { id: 'feature', head: 'f1' },
+      ],
+      [
+        { id: 'm1', parents: [], branch: 'main' },
+        { id: 'f1', parents: ['m1'], branch: 'feature' },
+      ],
+    );
+    const r = revertBranch(st, 'feature', 'main');
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBeTruthy();
+  });
+
+  it('reset: the target is not on the branch history', () => {
+    const st = s(
+      [
+        { id: 'develop', head: 'd1' },
+        { id: 'feature', head: 'f1' },
+      ],
+      [
+        { id: 'd1', parents: [], branch: 'develop' },
+        { id: 'f1', parents: ['d1'], branch: 'feature' },
+      ],
+    );
+    const r = resetBranch(st, 'develop', 'feature');
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBeTruthy();
+  });
+
+  it('both branches sit on the same commit', () => {
+    const st = s(
+      [
+        { id: 'develop', head: 'd1' },
+        { id: 'feature', head: 'd1' },
+      ],
+      [{ id: 'd1', parents: [], branch: 'develop' }],
+    );
+    for (const r of [
+      mergeBranches(st, 'feature', 'develop'),
+      cherryPickBranch(st, 'feature', 'develop'),
+      resetBranch(st, 'feature', 'develop'),
+    ]) {
+      expect(r.ok).toBe(false);
+      expect(r.reason).toBeTruthy();
+    }
+  });
+
+  it('no reason for a drop onto the branch being dragged', () => {
+    const r = mergeBranches(merged, 'feature', 'feature');
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBeUndefined();
+  });
+});
