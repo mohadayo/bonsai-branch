@@ -279,3 +279,32 @@ describe('matchesTarget — 正解手順ではクリアする', () => {
   }
 });
 
+
+// s-18: 「取り込んだ機能を revert 一発でまるごと無効化」を正しく教えられること。
+// 以前は feature が 2 コミットで、先端だけ revert しても手前のコミットが残り
+// 機能が止まらない（lesson と食い違う）状態だった。
+describe('s-18 — revert で機能がまるごと無効化される', () => {
+  it('feature は単一コミットで、revert 後に feature の全コミットが打ち消されている', () => {
+    const st = stageById('s-18');
+    // feature ブランチのコミットは 1 つだけ
+    const featCommits = Object.values(st.initial.commits).filter(
+      (c) => c.branch === 'feature',
+    );
+    expect(featCommits.length).toBe(1);
+
+    // 正解手順（feature を main に revert）でクリアする
+    const after = applyMove(st.initial, {
+      op: 'revert',
+      source: 'feature',
+      target: 'main',
+    });
+    expect(after).not.toBeNull();
+    expect(matchesTarget(after!, st.goal)).toBe(true);
+
+    // goal には打ち消しコミットがあり、feature の各コミットに対応する Revert が存在する
+    const hasRevert = Object.values(st.goal.commits).some((c) =>
+      (c.message ?? '').startsWith('Revert:'),
+    );
+    expect(hasRevert).toBe(true);
+  });
+});
