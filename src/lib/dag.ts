@@ -69,7 +69,7 @@ export function mergeBranches(
 
   return {
     state: newState,
-    command: `git checkout ${target.name} && git merge ${source.name}`,
+    command: `git checkout ${target.name} && git merge --no-ff ${source.name}`,
     newCommitId: id,
     ok: true,
   };
@@ -99,7 +99,31 @@ export function rebaseBranch(
       `${source.name} はすでに ${target.name} の先端の上にあります`,
     );
   }
-  const toReplay = chainBefore(state, source.head, base).reverse();
+  // first-parent の鎖で base に到達できるか確認する。
+  // source にマージコミットがあり base がその第二親側にあると、first-parent だけを
+  // 辿ると base を通り越して土台まで走り、根コミットを複製した壊れた履歴を作ってしまう。
+  // 単純な rebase（--rebase-merges なし）では扱えない状況なので、無言で壊さず弾く。
+  const fpChain: string[] = [];
+  let walk: string | undefined = source.head;
+  let reachedBase = false;
+  while (walk) {
+    if (walk === base) {
+      reachedBase = true;
+      break;
+    }
+    fpChain.push(walk);
+    walk = state.commits[walk]?.parents[0];
+  }
+  if (
+    !reachedBase ||
+    fpChain.some((id) => (state.commits[id]?.parents.length ?? 0) > 1)
+  ) {
+    return fail(
+      state,
+      `${source.name} はマージ結果を含むため、単純な rebase では ${target.name} に載せ替えられません`,
+    );
+  }
+  const toReplay = fpChain.reverse();
   if (toReplay.length === 0) {
     return fail(
       state,

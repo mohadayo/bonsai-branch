@@ -497,3 +497,67 @@ describe('rejection reason', () => {
     expect(r.reason).toBeUndefined();
   });
 });
+
+describe('rebaseBranch — マージコミットを含む source は壊さず弾く', () => {
+  it('source にマージがあり base が第二親側のときは fail(reason) で弾く（根の複製を防ぐ）', () => {
+    // develop: d1<-d2<-d3, feat/api: a1(親d1)<-a2, feat/ui: u1(親d2)
+    // feat/api に feat/ui をマージして Mapi=[a2,u1] を作ってから develop に rebase する状況。
+    const st = s(
+      [
+        { id: 'develop', head: 'd3' },
+        { id: 'feat/api', head: 'Mapi' },
+        { id: 'feat/ui', head: 'u1' },
+      ],
+      [
+        { id: 'd1', parents: [], branch: 'develop' },
+        { id: 'd2', parents: ['d1'], branch: 'develop' },
+        { id: 'd3', parents: ['d2'], branch: 'develop' },
+        { id: 'a1', parents: ['d1'], branch: 'feat/api' },
+        { id: 'a2', parents: ['a1'], branch: 'feat/api' },
+        { id: 'u1', parents: ['d2'], branch: 'feat/ui' },
+        { id: 'Mapi', parents: ['a2', 'u1'], branch: 'feat/api' },
+      ],
+    );
+    const r = rebaseBranch(st, 'feat/api', 'develop');
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBeTruthy();
+    // 根コミット d1 を複製した壊れた履歴を作っていないこと
+    expect(r.state).toBe(st);
+  });
+
+  it('マージを含まない通常のブランチは従来どおり rebase できる', () => {
+    const st = s(
+      [
+        { id: 'develop', head: 'd2' },
+        { id: 'feat', head: 'f2' },
+      ],
+      [
+        { id: 'd1', parents: [], branch: 'develop' },
+        { id: 'd2', parents: ['d1'], branch: 'develop' },
+        { id: 'f1', parents: ['d1'], branch: 'feat' },
+        { id: 'f2', parents: ['f1'], branch: 'feat' },
+      ],
+    );
+    const r = rebaseBranch(st, 'feat', 'develop');
+    expect(r.ok).toBe(true);
+  });
+});
+
+describe('mergeBranches — 表示コマンドは --no-ff（見本のマージコミットと一致）', () => {
+  it('merge コマンドに --no-ff が付く', () => {
+    const st = s(
+      [
+        { id: 'develop', head: 'd2' },
+        { id: 'feature', head: 'f1' },
+      ],
+      [
+        { id: 'd1', parents: [], branch: 'develop' },
+        { id: 'd2', parents: ['d1'], branch: 'develop' },
+        { id: 'f1', parents: ['d1'], branch: 'feature' },
+      ],
+    );
+    const r = mergeBranches(st, 'feature', 'develop');
+    expect(r.ok).toBe(true);
+    expect(r.command).toContain('merge --no-ff');
+  });
+});
