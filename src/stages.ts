@@ -756,31 +756,32 @@ const s18: Stage = {
   idea:
     '一旦無効化したいが、あとで戻すかもしれない。取り消し自体が履歴に残る操作なら復活も効く。',
   hint: 'feature の HEAD を main の HEAD に revert',
+  // feature は 1 コミットにする。複数コミットの機能を「先端だけ revert」しても
+  // 手前のコミットが残り機能は止まらない（それを教えたい面ではない）。ここでは
+  // 取り込んだ機能を revert 一発でまるごと無効化できることを教える。
   initial: buildState(
     ['main', 'feature'],
     {
       main: { name: 'main', head: 'M1', color: COL_MAIN },
-      feature: { name: 'feature', head: 'f2', color: COL_FEAT },
+      feature: { name: 'feature', head: 'f1', color: COL_FEAT },
     },
     [
       commit('m1', [], 'main', '初期化'),
-      commit('f1', ['m1'], 'feature', '機能 v1'),
-      commit('f2', ['f1'], 'feature', '機能 v1 微調整'),
-      commit('M1', ['m1', 'f2'], 'main', 'feature をマージ'),
+      commit('f1', ['m1'], 'feature', '機能追加'),
+      commit('M1', ['m1', 'f1'], 'main', 'feature をマージ'),
     ],
   ),
   goal: buildState(
     ['main', 'feature'],
     {
       main: { name: 'main', head: 'rv1', color: COL_MAIN },
-      feature: { name: 'feature', head: 'f2', color: COL_FEAT },
+      feature: { name: 'feature', head: 'f1', color: COL_FEAT },
     },
     [
       commit('m1', [], 'main', '初期化'),
-      commit('f1', ['m1'], 'feature', '機能 v1'),
-      commit('f2', ['f1'], 'feature', '機能 v1 微調整'),
-      commit('M1', ['m1', 'f2'], 'main', 'feature をマージ'),
-      commit('rv1', ['M1'], 'main', 'Revert: 機能 v1 微調整'),
+      commit('f1', ['m1'], 'feature', '機能追加'),
+      commit('M1', ['m1', 'f1'], 'main', 'feature をマージ'),
+      commit('rv1', ['M1'], 'main', 'Revert: 機能追加'),
     ],
   ),
 };
