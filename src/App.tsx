@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DndContext,
   pointerWithin,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -177,7 +178,14 @@ export default function App(): React.ReactElement {
       : false,
   );
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    // マウスは 4px 動かしたらドラッグ開始（それ未満はクリック＝枝を選ぶ扱い）。
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    // タッチは長押し(200ms)でドラッグ開始。指のわずかなブレ(<12px)ではドラッグにせず、
+    // 素早いタップは確実にクリック(枝を選ぶ)として扱う。distance:4 だとタップが
+    // 微小ドラッグに化けて空振りしていた。
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 12 },
+    }),
   );
 
   useEffect(() => {
@@ -691,8 +699,9 @@ export default function App(): React.ReactElement {
                     className={`mode-btn mode-${m} ${mode === m ? 'on' : ''}`}
                     onClick={() => setMode(m)}
                     disabled={activeBranch !== null}
+                    aria-pressed={mode === m}
                   >
-                    <span className={`mdot mdot-${m}`} />
+                    <span className={`mdot mdot-${m}`} aria-hidden="true" />
                     {MODE_LABELS[m]}
                   </button>
                 ))}
